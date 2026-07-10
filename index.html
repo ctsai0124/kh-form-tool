@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>簡章轉報名表工具（原型）</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<style>
+  :root{
+    --ink:#1c2b3a;
+    --paper:#fdfcf9;
+    --line:#d8d2c4;
+    --accent:#8a3b2b;
+    --accent-soft:#f3e6df;
+    --muted:#6b7280;
+    --panel:#ffffff;
+    --ok:#2e6b4f;
+    --warn:#b3541e;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:"Noto Serif TC","PMingLiU","Songti TC",serif;
+    line-height:1.55;
+  }
+  .app{
+    max-width:1400px;
+    margin:0 auto;
+    padding:28px 24px 80px;
+  }
+  header.top{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    border-bottom:3px double var(--ink);
+    padding-bottom:14px;
+    margin-bottom:22px;
+    flex-wrap:wrap;
+    gap:10px;
+  }
+  header.top h1{
+    font-size:22px;
+    letter-spacing:.06em;
+    margin:0;
+  }
+  header.top .sub{
+    font-size:13px;
+    color:var(--muted);
+    font-family:system-ui,sans-serif;
+  }
+
+  .layout{
+    display:grid;
+    grid-template-columns: 380px 1fr;
+    gap:24px;
+    align-items:start;
+  }
+  @media (max-width: 980px){
+    .layout{grid-template-columns:1fr;}
+  }
+
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:4px;
+    padding:18px 18px 20px;
+  }
+  .panel h2{
+    font-size:15px;
+    margin:0 0 12px;
+    padding-bottom:8px;
+    border-bottom:1px solid var(--line);
+    letter-spacing:.04em;
+  }
+
+  .dropzone{
+    border:2px dashed var(--line);
+    border-radius:6px;
+    padding:26px 14px;
+    text-align:center;
+    font-family:system-ui,sans-serif;
+    font-size:13.5px;
+    color:var(--muted);
+    cursor:pointer;
+    transition:border-color .15s, background .15s;
+  }
+  .dropzone.drag{
+    border-color:var(--accent);
+    background:var(--accent-soft);
+  }
+  .dropzone strong{color:var(--ink);}
+  .dropzone input{display:none;}
+
+  .filepill{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-family:system-ui,sans-serif;
+    font-size:13px;
+    background:var(--accent-soft);
+    border:1px solid var(--accent);
+    border-radius:20px;
+    padding:6px 12px;
+    margin-top:10px;
+    color:var(--accent);
+    word-break:break-all;
+  }
+
+  button.primary{
+    width:100%;
+    margin-top:14px;
+    background:var(--accent);
+    color:#fff;
+    border:none;
+    padding:11px;
+    border-radius:4px;
+    font-family:system-ui,sans-serif;
+    font-size:14.5px;
+    letter-spacing:.03em;
+    cursor:pointer;
+  }
+  button.primary:disabled{
+    background:#c9c2b6;
+    cursor:not-allowed;
+  }
+  button.secondary{
+    background:none;
+    border:1px solid var(--line);
+    color:var(--ink);
+    padding:8px 12px;
+    border-radius:4px;
+    font-family:system-ui,sans-serif;
+    font-size:13px;
+    cursor:pointer;
+  }
+
+  .status{
+    margin-top:12px;
+    font-family:system-ui,sans-serif;
+    font-size:12.5px;
+    color:var(--muted);
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .status.err{color:#b3261e;}
+  .status.ok{color:var(--ok);}
+
+  .spinner{
+    width:13px;height:13px;
+    border:2px solid var(--line);
+    border-top-color:var(--accent);
+    border-radius:50%;
+    animation:spin .7s linear infinite;
+    flex:0 0 auto;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  /* --- field editor --- */
+  .field-row{
+    margin-bottom:11px;
+  }
+  .field-row label{
+    display:block;
+    font-family:system-ui,sans-serif;
+    font-size:11.5px;
+    color:var(--muted);
+    margin-bottom:3px;
+  }
+  .field-row input, .field-row textarea{
+    width:100%;
+    font-family:"Noto Serif TC",serif;
+    font-size:13.5px;
+    padding:6px 8px;
+    border:1px solid var(--line);
+    border-radius:3px;
+    background:#fffefb;
+    color:var(--ink);
+  }
+  .field-row textarea{resize:vertical;min-height:44px;}
+  .cat-tags{
+    display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;
+  }
+  .cat-tag{
+    display:flex;align-items:center;gap:6px;
+    font-family:system-ui,sans-serif;font-size:12px;
+    background:#f4f1ea;border:1px solid var(--line);
+    padding:4px 8px;border-radius:14px;
+  }
+  .cat-tag button{
+    border:none;background:none;color:var(--muted);cursor:pointer;font-size:13px;line-height:1;
+  }
+  .addcat{
+    display:flex;gap:6px;margin-top:6px;
+  }
+  .addcat input{flex:1;font-size:12.5px;padding:5px 7px;}
+  .addcat button{
+    font-family:system-ui,sans-serif;font-size:12px;
+    border:1px solid var(--accent);color:var(--accent);background:none;
+    border-radius:3px;padding:4px 10px;cursor:pointer;
+  }
+
+  .examitem-row{
+    display:grid;grid-template-columns:1fr 70px auto;gap:6px;margin-bottom:6px;
+  }
+  .examitem-row input{font-size:12.5px;padding:5px 7px;}
+  .examitem-row button{border:none;background:none;color:var(--muted);cursor:pointer;}
+
+  .divider{
+    border:none;border-top:1px solid var(--line);margin:16px 0;
+  }
+
+  details.rawjson summary{
+    font-family:system-ui,sans-serif;font-size:11.5px;color:var(--muted);cursor:pointer;
+  }
+  details.rawjson pre{
+    font-size:10.5px;background:#f7f5f0;padding:8px;border-radius:4px;
+    max-height:220px;overflow:auto;white-space:pre-wrap;word-break:break-all;
+  }
+
+  /* --- preview / printable form --- */
+  .preview-toolbar{
+    display:flex;justify-content:space-between;align-items:center;
+    margin-bottom:14px;
+  }
+  .preview-toolbar .hint{
+    font-family:system-ui,sans-serif;font-size:12px;color:var(--muted);
+  }
+
+  .doc-page{
+    background:#fff;
+    border:1px solid var(--line);
+    padding:34px 40px;
+    margin-bottom:26px;
+    font-size:14px;
+  }
+  .doc-page h3.formtitle{
+    text-align:center;
+    font-size:16.5px;
+    margin:0 0 16px;
+    letter-spacing:.05em;
+  }
+  table.form{
+    width:100%;
+    border-collapse:collapse;
+    margin-bottom:14px;
+  }
+  table.form td, table.form th{
+    border:1px solid var(--ink);
+    padding:7px 9px;
+    vertical-align:middle;
+    font-size:13.5px;
+  }
+  table.form th{
+    background:#f6f3ec;
+    font-weight:600;
+    white-space:nowrap;
+  }
+  .label-cell{
+    background:#f6f3ec;
+    font-weight:600;
+    white-space:nowrap;
+    width:1%;
+  }
+  .photo-cell{
+    text-align:center;
+    color:var(--muted);
+    font-size:11px;
+    font-family:system-ui,sans-serif;
+  }
+  .photo-box{
+    width:90px;height:120px;
+    border:1px dashed var(--line);
+    margin:0 auto 6px;
+    display:flex;align-items:center;justify-content:center;
+    color:#b7b0a2;
+    font-size:11px;
+  }
+  .checklist{
+    font-size:12.5px;
+    line-height:2;
+  }
+  .checklist span{
+    display:inline-block;
+    margin-right:14px;
+    white-space:nowrap;
+  }
+  .box{
+    display:inline-block;width:11px;height:11px;
+    border:1px solid var(--ink);
+    margin-right:4px;
+    vertical-align:-1px;
+  }
+  .note-block{
+    font-size:12.5px;
+    margin-top:10px;
+    color:var(--ink);
+  }
+  .note-block b{display:inline;}
+  .sig-block{
+    margin-top:26px;
+    font-size:13.5px;
+    line-height:2.1;
+  }
+  .sig-line{
+    display:inline-block;
+    border-bottom:1px solid var(--ink);
+    min-width:220px;
+  }
+  .to-line{
+    margin:20px 0 10px;
+    font-size:13.5px;
+  }
+
+  @media print{
+    header.top, .layout > .panel:first-child, .preview-toolbar, details.rawjson{display:none !important;}
+    .layout{display:block;}
+    .doc-page{border:none;margin:0;padding:0;page-break-after:always;}
+    body{background:#fff;}
+    .app{padding:0;max-width:none;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="top">
+    <div>
+      <h1>簡章轉報名表工具</h1>
+    </div>
+    <div class="sub">原型 · 上傳甄選簡章 PDF → 純本機辨識(免 API key) → 產生報名表 / 甄選證 / 切結書</div>
+  </header>
+
+  <div class="layout">
+
+    <!-- LEFT: upload + extracted fields -->
+    <div class="panel">
+      <h2>① 上傳簡章</h2>
+      <div class="dropzone" id="dropzone">
+        <div>將簡章 PDF 拖曳到此，或<br><strong>點擊選擇檔案</strong></div>
+        <div style="margin-top:6px;font-size:11.5px;">支援一般 PDF 及掃描版 PDF</div>
+        <input type="file" id="fileInput" accept="application/pdf">
+      </div>
+      <div id="filePill"></div>
+      <button class="primary" id="parseBtn" disabled>解析簡章內容</button>
+      <div class="status" id="statusLine"></div>
+      <div class="status" id="modeLine" style="display:none;"></div>
+
+      <hr class="divider" id="fieldsDivider" style="display:none;">
+
+      <div id="fieldsWrap" style="display:none;">
+        <h2 style="border:none;padding:0;margin-bottom:10px;">② 核對 / 修改判讀結果</h2>
+
+        <div class="field-row"><label>學校全銜（含區）</label><input id="f_school_name"></div>
+        <div class="field-row"><label>學校簡稱（表頭用）</label><input id="f_school_short"></div>
+        <div class="field-row"><label>職缺類型（如：代理教師／代課教師／幼兒園代理教師／專任輔導教師）</label><input id="f_position_type"></div>
+        <div class="field-row"><label>簡章編號（如：第2號第2次）</label><input id="f_announcement_no"></div>
+
+        <div class="field-row">
+          <label>報考組別 / 類科</label>
+          <div class="cat-tags" id="catTags"></div>
+          <div class="addcat">
+            <input id="catInput" placeholder="新增組別後按「加入」">
+            <button type="button" id="catAdd">加入</button>
+          </div>
+        </div>
+
+        <div class="field-row"><label>名額</label><input id="f_quota"></div>
+        <div class="field-row"><label>聘任期限</label><input id="f_employment_period"></div>
+
+        <div class="field-row"><label>報名時間</label><input id="f_registration_date"></div>
+        <div class="field-row"><label>報名地點</label><input id="f_registration_location"></div>
+        <div class="field-row"><label>聯絡人 / 電話</label><input id="f_contact"></div>
+        <div class="field-row"><label>報名費</label><input id="f_registration_fee"></div>
+
+        <div class="field-row"><label>甄試時間</label><input id="f_exam_date"></div>
+        <div class="field-row"><label>甄試地點</label><input id="f_exam_location"></div>
+
+        <div class="field-row">
+          <label>甄試項目與比例</label>
+          <div id="examItems"></div>
+          <div class="addcat">
+            <button type="button" id="examAdd" class="secondary" style="width:100%;">+ 新增甄試項目</button>
+          </div>
+        </div>
+
+        <div class="field-row"><label>最低錄取分數</label><input id="f_min_score"></div>
+        <div class="field-row"><label>成績公告時間</label><input id="f_result_date"></div>
+        <div class="field-row"><label>複查截止時間</label><input id="f_review_deadline"></div>
+        <div class="field-row"><label>報到截止時間</label><input id="f_report_deadline"></div>
+
+        <hr class="divider">
+        <details class="rawjson">
+          <summary>查看原始判讀 JSON（除錯用）</summary>
+          <pre id="rawJsonView">（尚未解析）</pre>
+        </details>
+      </div>
+    </div>
+
+    <!-- RIGHT: rendered form preview -->
+    <div>
+      <div class="preview-toolbar">
+        <div class="hint">左側欄位修改後，右側表單會即時更新；確認無誤後可直接列印或另存 PDF。</div>
+        <button class="secondary" id="printBtn">列印 / 另存 PDF</button>
+      </div>
+
+      <div id="previewWrap">
+        <div class="doc-page" style="text-align:center;color:var(--muted);font-family:system-ui,sans-serif;padding:70px 20px;">
+          尚未產生表單 — 請先於左側上傳並解析簡章。
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+/* ---------------- state ---------------- */
+let uploadedBase64 = null;
+let uploadedArrayBuffer = null;
+let uploadedName = "";
+let data = null; // extracted / edited structured data
+let detectedMode = null; // 'text' | 'scan'
+let extractedPdfText = "";
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+const el = id => document.getElementById(id);
+
+/* Try to pull a text layer out of the PDF client-side.
+   Returns { text, hasTextLayer, pageCount } */
+async function detectAndExtractText(arrayBuffer){
+  const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer.slice(0) });
+  const pdf = await loadingTask.promise;
+  let full = "";
+  for(let i=1; i<=pdf.numPages; i++){
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    const pageText = content.items.map(it => it.str).join(" ");
+    full += pageText + "\n";
+  }
+  const meaningfulLen = full.replace(/\s/g,'').length;
+  // Heuristic: a real text layer yields roughly dozens+ of characters per page.
+  // Scanned PDFs with no OCR layer come back nearly empty.
+  const hasTextLayer = meaningfulLen > (pdf.numPages * 30) && meaningfulLen > 150;
+  return { text: full, hasTextLayer, pageCount: pdf.numPages };
+}
+
+/* ---------------- upload handling ---------------- */
+const dropzone = el('dropzone');
+const fileInput = el('fileInput');
+const filePill = el('filePill');
+const parseBtn = el('parseBtn');
+const statusLine = el('statusLine');
+
+dropzone.addEventListener('click', () => fileInput.click());
+['dragover','dragenter'].forEach(ev=>dropzone.addEventListener(ev, e=>{e.preventDefault();dropzone.classList.add('drag');}));
+['dragleave','drop'].forEach(ev=>dropzone.addEventListener(ev, e=>{e.preventDefault();dropzone.classList.remove('drag');}));
+dropzone.addEventListener('drop', e=>{
+  const f = e.dataTransfer.files[0];
+  if(f) handleFile(f);
+});
+fileInput.addEventListener('change', e=>{
+  const f = e.target.files[0];
+  if(f) handleFile(f);
+});
+
+function handleFile(file){
+  if(file.type !== 'application/pdf'){
+    setStatus('請上傳 PDF 檔案', 'err');
+    return;
+  }
+  uploadedName = file.name;
+  parseBtn.disabled = true;
+  el('modeLine').style.display = 'none';
+  filePill.innerHTML = `<div class="filepill">📄 ${escapeHtml(file.name)}</div>`;
+  setStatus('正在檢查 PDF 是否含有文字層…','loading');
+
+  const reader = new FileReader();
+  reader.onload = async () => {
+    const dataUrl = reader.result;
+    uploadedBase64 = dataUrl.split(',')[1];
+    uploadedArrayBuffer = base64ToArrayBuffer(uploadedBase64);
+    try{
+      const { text, hasTextLayer, pageCount } = await detectAndExtractText(uploadedArrayBuffer);
+      extractedPdfText = text;
+      detectedMode = hasTextLayer ? 'text' : 'scan';
+      const modeEl = el('modeLine');
+      modeEl.style.display = 'flex';
+      modeEl.className = 'status ' + (hasTextLayer ? 'ok' : '');
+      modeEl.innerHTML = hasTextLayer
+        ? `✅ 偵測到原生文字層（共 ${pageCount} 頁）— 將使用「純文字模式」解析，成本極低`
+        : `⚠️ 偵測為掃描影像 PDF（共 ${pageCount} 頁，無文字層）— 將使用「影像判讀模式」，由 Claude 直接讀取頁面畫面`;
+      setStatus('檢查完成，可以按下方按鈕解析','ok');
+      parseBtn.disabled = false;
+    }catch(err){
+      console.error(err);
+      // If pdf.js itself fails to parse the file, fall back to image mode.
+      detectedMode = 'scan';
+      extractedPdfText = "";
+      const modeEl = el('modeLine');
+      modeEl.style.display = 'flex';
+      modeEl.className = 'status';
+      modeEl.innerHTML = `⚠️ 無法自動偵測文字層，將以「影像判讀模式」處理`;
+      setStatus('檢查完成，可以按下方按鈕解析','ok');
+      parseBtn.disabled = false;
+    }
+  };
+  reader.onerror = () => setStatus('檔案讀取失敗，請重新選擇','err');
+  reader.readAsDataURL(file);
+}
+
+function base64ToArrayBuffer(base64){
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for(let i=0;i<binary.length;i++) bytes[i] = binary.charCodeAt(i);
+  return bytes.buffer;
+}
+
+function setStatus(msg, cls){
+  statusLine.className = 'status ' + (cls||'');
+  statusLine.innerHTML = msg ? (cls==='loading' ? `<div class="spinner"></div>${msg}` : msg) : '';
+}
+
+function escapeHtml(s){
+  return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* ---------------- 100% local extraction: no API key, no server, no cost ---------------- */
+const OCR_MAX_PAGES = 4; // key fields consistently sit on the first 1-2 pages; cap to keep browser OCR fast
+let tesseractWorker = null;
+
+async function getTesseractWorker(){
+  if(tesseractWorker) return tesseractWorker;
+  tesseractWorker = await Tesseract.createWorker('chi_tra', 1, {
+    logger: m => {
+      if(m.status === 'recognizing text'){
+        setStatus(`OCR 辨識中…（${Math.round((m.progress||0)*100)}%）`, 'loading');
+      }
+    }
+  });
+  return tesseractWorker;
+}
+
+async function ocrScannedPdf(arrayBuffer){
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer.slice(0) }).promise;
+  const pagesToRead = Math.min(pdf.numPages, OCR_MAX_PAGES);
+  const worker = await getTesseractWorker();
+  let full = "";
+  for(let i=1; i<=pagesToRead; i++){
+    setStatus(`正在以 OCR 辨識第 ${i}/${pagesToRead} 頁…`, 'loading');
+    const page = await pdf.getPage(i);
+    const viewport = page.getViewport({ scale: 2.0 });
+    const canvas = document.createElement('canvas');
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    const ctx = canvas.getContext('2d');
+    await page.render({ canvasContext: ctx, viewport }).promise;
+    const { data: { text } } = await worker.recognize(canvas);
+    full += text + "\n";
+  }
+  return full;
+}
+
+/* ---- rule-based field parser (regex only, no LLM) ---- */
+function firstMatch(re, text, groupIdx=1){
+  const m = text.match(re);
+  return m ? m[groupIdx].trim() : "";
+}
+function allMatches(re, text){
+  return [...text.matchAll(re)];
+}
+function shortenSchoolName(name){
+  if(!name) return "";
+  let s = name.replace(/^[\u4e00-\u9fa5]{2,3}[市縣]/, "");
+  s = s.replace(/^[\u4e00-\u9fa5]{1,3}[區鄉鎮市]/, "");
+  s = s.replace(/國民小學$/, "國小");
+  return s;
+}
+function cleanLine(s){
+  return (s||"").replace(/[ \t]+/g,' ').replace(/^[\s、:：.。]+|[\s。]+$/g,'').trim();
+}
+
+function parseFieldsFromText(raw){
+  // Normalize a few OCR/full-width quirks so regexes match more reliably.
+  const text = raw.replace(/\r/g,'').replace(/﹕|︰/g,'：').replace(/﹒/g,'.').replace(/[ \t]+/g,' ');
+
+  const school_name = firstMatch(/([\u4e00-\u9fa5]{2,3}[市縣][\u4e00-\u9fa5]{0,4}[區鄉鎮市]?[\u4e00-\u9fa5]{1,6}國民?小學)/, text)
+                    || firstMatch(/([\u4e00-\u9fa5]{2,3}[市縣][\u4e00-\u9fa5]{2,10}幼兒園)/, text);
+  const school_short = shortenSchoolName(school_name);
+
+  const announcement_no = firstMatch(/(第[一二三四五六七八九十\d]+號第[一二三四五六七八九十\d]+次)/, text);
+
+  const posCandidates = ['幼兒園代理教師','專任輔導教師','巡迴輔導教師','代理教師','代課教師','代理專輔教師','專輔教師'];
+  let position_type = "";
+  for(const p of posCandidates){ if(text.includes(p)){ position_type = p; break; } }
+
+  const categories = [];
+  allMatches(/([\u4e00-\u9fa5A-Za-z]{1,8})(?:代理|代課)(?:（?課）?)?正取/g, text).forEach(m=>{
+    const c = m[1].trim();
+    if(c && !categories.includes(c)) categories.push(c);
+  });
+
+  const quota = firstMatch(/(正取[^\n，,。；]{0,20}備取[^\n，,。；]{0,15})/, text);
+
+  const employment_period = firstMatch(/聘任期[間限][:：]?\s*(自[^\n)）]{0,30}止)/, text)
+                          || firstMatch(/(自\d+年\d+月\d+日至\d+年\d+月\d+日止?)/, text);
+
+  const registration_date = cleanLine(firstMatch(/報名時間[:：]?\s*([^\n]{0,70})/, text));
+  let registration_location = cleanLine(firstMatch(/地\s*址[:：]?\s*([^\n]{0,60})/, text));
+  if(!registration_location){
+    registration_location = cleanLine(firstMatch(/報名地點[:：]?\s*([^\n]{0,60})/, text));
+  }
+  const contact_person = cleanLine(firstMatch(/聯絡人[:：]?\s*([^\n]{0,20})/, text));
+  const contact_phone = cleanLine(firstMatch(/聯絡電話[:：]?\s*([0-9#\-\s]{6,20})/, text));
+  const registration_fee = firstMatch(/報名費[:：]?\s*([0-9,]{1,6}\s*元)/, text);
+
+  const exam_date = cleanLine(firstMatch(/甄試時間[:：]?\s*([^\n]{0,70})/, text));
+  const exam_location = cleanLine(firstMatch(/甄試地點[:：]?\s*([^\n]{0,60})/, text));
+
+  const exam_items = [];
+  allMatches(/(口試|試教|筆試|測驗|實作)[:：]?\s*(?:佔[^\d]{0,12})?(\d{1,3})\s*[%％]/g, text).forEach(m=>{
+    exam_items.push({ name: m[1], weight: m[2]+'%' });
+  });
+
+  const min_passing_score = firstMatch(/最低錄取分數\s*(\d{1,3})\s*分/, text);
+  const result_announcement_date = cleanLine(
+    firstMatch(/(?:甄試結果公告日期|成績公告|錄取公告)[:：]?\s*([^\n。]{0,40})/, text)
+  );
+  const score_review_deadline = cleanLine(
+    firstMatch(/複查[^\n]{0,6}時間[:：]?\s*([^\n。]{0,40})/, text)
+  );
+  const report_deadline = cleanLine(
+    firstMatch(/正取人員[^\n]{0,10}請於\s*([^\n，。]{0,40}?)(?:前)?報到/, text)
+  );
+
+  return {
+    school_name, school_short, position_type, announcement_no, categories,
+    quota, employment_period, registration_date, registration_location,
+    contact_person, contact_phone, registration_fee, exam_date, exam_location,
+    exam_items, min_passing_score, result_announcement_date, score_review_deadline,
+    report_deadline
+  };
+}
+
+parseBtn.addEventListener('click', async () => {
+  if(!uploadedBase64) return;
+  parseBtn.disabled = true;
+
+  try{
+    let sourceText = "";
+    if(detectedMode === 'text'){
+      setStatus('正在以純文字模式解析欄位…（不需要 OCR，幾乎瞬間完成）','loading');
+      sourceText = extractedPdfText;
+    } else {
+      setStatus(`正在以 OCR 辨識掃描頁面…（僅辨識前 ${OCR_MAX_PAGES} 頁，較花時間，請稍候）`,'loading');
+      sourceText = await ocrScannedPdf(uploadedArrayBuffer);
+    }
+
+    const parsed = parseFieldsFromText(sourceText);
+    data = normalize(parsed);
+    el('rawJsonView').textContent =
+      '--- 判讀出的結構化欄位 ---\n' + JSON.stringify(parsed, null, 2) +
+      '\n\n--- 原始擷取/OCR 文字（供核對）---\n' + sourceText.slice(0, 6000);
+    fillFieldsFromData();
+    el('fieldsDivider').style.display = 'block';
+    el('fieldsWrap').style.display = 'block';
+    renderPreview();
+    setStatus(
+      (detectedMode === 'text' ? '（純文字模式）' : '（OCR 模式，僅前數頁）') +
+      '判讀完成 — 這是規則式判讀，準確率不如人工，請務必逐項核對左側欄位。',
+      'ok'
+    );
+  }catch(err){
+    console.error(err);
+    setStatus('解析失敗:'+err.message+'（請人工填寫左側欄位）','err');
+    if(!data){
+      data = normalize({});
+      fillFieldsFromData();
+      el('fieldsDivider').style.display = 'block';
+      el('fieldsWrap').style.display = 'block';
+      renderPreview();
+    }
+  }finally{
+    parseBtn.disabled = false;
+  }
+});
+
+function normalize(p){
+  return {
+    school_name: p.school_name || "",
+    school_short: p.school_short || "",
+    position_type: p.position_type || "",
+    announcement_no: p.announcement_no || "",
+    categories: Array.isArray(p.categories) ? p.categories : [],
+    quota: p.quota || "",
+    employment_period: p.employment_period || "",
+    registration_date: p.registration_date || "",
+    registration_location: p.registration_location || "",
+    contact_person: p.contact_person || "",
+    contact_phone: p.contact_phone || "",
+    contact: [p.contact_person, p.contact_phone].filter(Boolean).join(' '),
+    registration_fee: p.registration_fee || "",
+    exam_date: p.exam_date || "",
+    exam_location: p.exam_location || "",
+    exam_items: Array.isArray(p.exam_items) && p.exam_items.length ? p.exam_items : [{name:"口試",weight:"50%"},{name:"試教",weight:"50%"}],
+    min_passing_score: p.min_passing_score || "",
+    result_announcement_date: p.result_announcement_date || "",
+    score_review_deadline: p.score_review_deadline || "",
+    report_deadline: p.report_deadline || ""
+  };
+}
+
+/* ---------------- left panel <-> data binding ---------------- */
+const simpleFieldIds = {
+  f_school_name:'school_name', f_school_short:'school_short', f_position_type:'position_type',
+  f_announcement_no:'announcement_no', f_quota:'quota', f_employment_period:'employment_period',
+  f_registration_date:'registration_date', f_registration_location:'registration_location',
+  f_contact:'contact', f_registration_fee:'registration_fee', f_exam_date:'exam_date',
+  f_exam_location:'exam_location', f_min_score:'min_passing_score', f_result_date:'result_announcement_date',
+  f_review_deadline:'score_review_deadline', f_report_deadline:'report_deadline'
+};
+
+function fillFieldsFromData(){
+  Object.entries(simpleFieldIds).forEach(([domId,key])=>{
+    el(domId).value = data[key] || '';
+  });
+  renderCatTags();
+  renderExamItems();
+}
+
+Object.keys(simpleFieldIds).forEach(domId=>{
+  document.addEventListener('input', e=>{
+    if(e.target.id === domId){
+      data[simpleFieldIds[domId]] = e.target.value;
+      renderPreview();
+    }
+  });
+});
+
+function renderCatTags(){
+  const wrap = el('catTags');
+  wrap.innerHTML = '';
+  data.categories.forEach((c,i)=>{
+    const d = document.createElement('div');
+    d.className = 'cat-tag';
+    d.innerHTML = `<span>${escapeHtml(c)}</span><button type="button" data-i="${i}">✕</button>`;
+    d.querySelector('button').onclick = ()=>{ data.categories.splice(i,1); renderCatTags(); renderPreview(); };
+    wrap.appendChild(d);
+  });
+}
+el('catAdd').addEventListener('click', ()=>{
+  const v = el('catInput').value.trim();
+  if(v){ data.categories.push(v); el('catInput').value=''; renderCatTags(); renderPreview(); }
+});
+el('catInput').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); el('catAdd').click(); }});
+
+function renderExamItems(){
+  const wrap = el('examItems');
+  wrap.innerHTML = '';
+  data.exam_items.forEach((it,i)=>{
+    const row = document.createElement('div');
+    row.className = 'examitem-row';
+    row.innerHTML = `<input value="${escapeHtml(it.name)}" data-f="name" placeholder="項目名稱">
+                      <input value="${escapeHtml(it.weight)}" data-f="weight" placeholder="佔比">
+                      <button type="button">✕</button>`;
+    const [nameInput, weightInput] = row.querySelectorAll('input');
+    nameInput.oninput = ()=>{ it.name = nameInput.value; renderPreview(); };
+    weightInput.oninput = ()=>{ it.weight = weightInput.value; renderPreview(); };
+    row.querySelector('button').onclick = ()=>{ data.exam_items.splice(i,1); renderExamItems(); renderPreview(); };
+    wrap.appendChild(row);
+  });
+}
+el('examAdd').addEventListener('click', ()=>{
+  data.exam_items.push({name:'',weight:''});
+  renderExamItems();
+  renderPreview();
+});
+
+/* ---------------- preview rendering (matches 附表一/二/三 layout) ---------------- */
+function renderPreview(){
+  if(!data) return;
+  const d = data;
+  const catBoxes = (d.categories.length ? d.categories : ['(未指定組別)'])
+    .map(c=>`<span class="box"></span>${escapeHtml(c)}`).join('&nbsp;&nbsp;&nbsp;');
+
+  const examRows = d.exam_items.map(it=>`<tr><td>${escapeHtml(it.name)}</td><td>${escapeHtml(it.weight)}</td></tr>`).join('');
+
+  const title = `${escapeHtml(d.school_short||d.school_name)}115學年度${escapeHtml(d.position_type||'教師')}甄選報名表(${escapeHtml(d.announcement_no)})`;
+  const title2 = `${escapeHtml(d.school_short||d.school_name)}115學年度${escapeHtml(d.position_type||'教師')}甄選證(${escapeHtml(d.announcement_no)})`;
+
+  el('previewWrap').innerHTML = `
+
+  <div class="doc-page">
+    <div style="text-align:center;font-size:12px;color:var(--muted);font-family:system-ui,sans-serif;margin-bottom:8px;">附表一</div>
+    <h3 class="formtitle">${title}</h3>
+    <table class="form">
+      <tr><td class="label-cell">甄選證編號</td><td colspan="3"></td></tr>
+      <tr><td class="label-cell">報考組別</td><td colspan="3">${catBoxes}</td></tr>
+    </table>
+    <table class="form">
+      <tr>
+        <td class="label-cell">姓　　名</td><td></td>
+        <td class="label-cell">身分證統一編號</td><td></td>
+        <td class="photo-cell" rowspan="3" style="width:110px;">
+          <div class="photo-box">二吋照片</div>自行黏貼二吋<br>正面脫帽相片
+        </td>
+      </tr>
+      <tr>
+        <td class="label-cell">出生年月日</td><td>民國　　年　　月　　日</td>
+        <td class="label-cell">性　　別</td><td><span class="box"></span>男　<span class="box"></span>女</td>
+      </tr>
+      <tr>
+        <td class="label-cell">最高學歷科系</td><td></td>
+        <td class="label-cell">師資職前教育<br>課程修畢學校</td><td></td>
+      </tr>
+      <tr><td class="label-cell">住　　址</td><td colspan="4"></td></tr>
+      <tr><td class="label-cell">聯絡電話</td><td colspan="4">(H)住宅:　　　　　　(O)公司:　　　　　　(M)手機:</td></tr>
+    </table>
+    <table class="form">
+      <tr><th>服務單位</th><th>職稱</th><th>起訖日期</th><th>備註</th></tr>
+      <tr><td>&nbsp;</td><td></td><td>年　月　日至　　年　　月　　日</td><td></td></tr>
+      <tr><td>&nbsp;</td><td></td><td>年　月　日至　　年　　月　　日</td><td></td></tr>
+    </table>
+    <div class="checklist">
+      <b>應繳(掃描)證件:</b><br>
+      <span><span class="box"></span>1.報名表</span>
+      <span><span class="box"></span>2.甄選證</span>
+      <span><span class="box"></span>3.切結書</span>
+      <span><span class="box"></span>4.國民身分證</span>
+      <span><span class="box"></span>5.合格教師證書</span>
+      <span><span class="box"></span>5-1.特教合格證書</span>
+      <span><span class="box"></span>5-2.師資職前教育課程證明</span>
+      <span><span class="box"></span>6.最高學歷畢業證書</span>
+      <span><span class="box"></span>7.個人簡歷</span>
+      <span><span class="box"></span>8.身心障礙證明</span>
+      <span><span class="box"></span>9.兵役證明</span>
+      <span><span class="box"></span>10.警察刑事紀錄證明(可後補)</span>
+    </div>
+    <table class="form" style="margin-top:12px;">
+      <tr><td class="label-cell">合格教師證書</td><td class="label-cell" style="width:1%;">核發年月</td><td></td><td class="label-cell" style="width:1%;">字號</td><td></td></tr>
+      <tr><td class="label-cell">審查結果</td><td colspan="2"><span class="box"></span>准予報考　<span class="box"></span>資格不符</td><td class="label-cell">審查者簽章</td><td></td></tr>
+    </table>
+    <div class="note-block">
+      <b>報名時間:</b>${escapeHtml(d.registration_date)||'—'}　｜　<b>報名地點:</b>${escapeHtml(d.registration_location)||'—'}<br>
+      <b>聯絡方式:</b>${escapeHtml(d.contact)||'—'}　｜　<b>報名費:</b>${escapeHtml(d.registration_fee)||'—'}<br>
+      <b>聘任期限:</b>${escapeHtml(d.employment_period)||'—'}　｜　<b>名額:</b>${escapeHtml(d.quota)||'—'}
+    </div>
+  </div>
+
+  <div class="doc-page">
+    <div style="text-align:center;font-size:12px;color:var(--muted);font-family:system-ui,sans-serif;margin-bottom:8px;">附表二</div>
+    <h3 class="formtitle">${title2}</h3>
+    <table class="form">
+      <tr><td class="label-cell">甄選證編號</td><td colspan="3"></td></tr>
+      <tr><td class="label-cell">報考組別</td><td colspan="3">${catBoxes}</td></tr>
+      <tr>
+        <td class="label-cell">姓　　名</td><td></td>
+        <td class="photo-cell" colspan="2"><div class="photo-box" style="display:inline-flex;">照片黏貼處</div></td>
+      </tr>
+    </table>
+    <table class="form">
+      <tr><th>日期</th><th>時間</th><th>項目</th><th>試務委員簽章</th><th>備註</th></tr>
+      <tr><td>${escapeHtml(d.exam_date)||'　'}</td><td></td><td>報到</td><td>-----</td><td></td></tr>
+      <tr><td></td><td></td><td>試教</td><td></td><td></td></tr>
+      <tr><td></td><td></td><td>口試</td><td></td><td></td></tr>
+    </table>
+    <table class="form" style="max-width:260px;">
+      <tr><th>甄試項目</th><th>佔比</th></tr>
+      ${examRows}
+    </table>
+    <div class="note-block">
+      <b>甄試地點:</b>${escapeHtml(d.exam_location)||'—'}　｜　<b>最低錄取分數:</b>${escapeHtml(d.min_passing_score)||'—'}<br>
+      <b>成績公告:</b>${escapeHtml(d.result_announcement_date)||'—'}　｜　<b>複查截止:</b>${escapeHtml(d.score_review_deadline)||'—'}　｜　<b>報到截止:</b>${escapeHtml(d.report_deadline)||'—'}
+    </div>
+    <div class="note-block">
+      一、應考人請攜帶准考證準時報到。<br>
+      二、應考人應嚴守紀律不得擾亂試場秩序，有舞弊行為者，取消應考資格。<br>
+      三、報到時間與口試、試教試場位置於報名截止後公告本校網站。
+    </div>
+  </div>
+
+  <div class="doc-page">
+    <div style="text-align:center;font-size:12px;color:var(--muted);font-family:system-ui,sans-serif;margin-bottom:8px;">附表三</div>
+    <h3 class="formtitle">切　結　書</h3>
+    <p>本人　　　　　　　　　參加${escapeHtml(d.school_name||d.school_short)}115學年度${escapeHtml(d.position_type||'教師')}甄選(${escapeHtml(d.announcement_no)})，切結事項如次:</p>
+    <p>
+      一、本人無違反教育人員任用條例第31條、第33條，教師法第14條或其他不得擔任教育人員之情事、或證件不實之情形，並依政府資訊公開法授權有關機關查證及依甄選簡章之規定辦理。<br>
+      二、本人為中華民國國民。<br>
+      三、非大陸地區人民(但經許可進入臺灣地區且在臺灣地區設籍已滿10年者，不在此限)。<br>
+      四、應考人於錄取後，經發現偽造、變造所附證件、冒名頂替應考者，或有不得任用之情事者，取消錄取資格。<br>
+      五、本人同意為確保考試之公平性，考試過程全程錄影。
+    </p>
+    <p>如違反或未辦妥上述事項，願於錄取後無條件自動放棄錄取資格，絕無異議。</p>
+    <div class="to-line">此致</div>
+    <div>${escapeHtml(d.school_name)}</div>
+    <div class="sig-block">
+      具結人:<span class="sig-line"></span>(本欄務必親自簽名，勿以電腦登打)<br>
+      身分證字號:<span class="sig-line"></span><br>
+      住　　址:<span class="sig-line"></span><br>
+      手機號碼:<span class="sig-line"></span><br><br>
+      中　華　民　國　115　年　　月　　日
+    </div>
+  </div>
+  `;
+}
+
+el('printBtn').addEventListener('click', ()=> window.print());
+</script>
+</body>
+</html>
