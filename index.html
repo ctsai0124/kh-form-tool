@@ -966,6 +966,9 @@ parseBtn.addEventListener('click', async () => {
     fillFieldsFromData();
     el('fieldsDivider').style.display = 'block';
     el('fieldsWrap').style.display = 'block';
+    // 順手同步②③分頁的活動代碼欄位，不用等切換分頁才更新
+    el('qrAnnouncementNo').value = data.activity_code;
+    el('filterAnnouncementNo').value = data.activity_code;
     renderPreview();
     setStatus(
       (detectedMode === 'text' ? '（純文字模式）' : '（OCR 模式，僅前數頁）') +
@@ -1067,6 +1070,9 @@ el('regenCodeBtn').addEventListener('click', ()=>{
   if(!data) return;
   data.activity_code = `${slugForCode(data.school_short||data.school_name)}_${slugForCode(data.announcement_no)}_${randomSuffix()}`;
   el('f_activity_code').value = data.activity_code;
+  // 順手同步②③分頁的活動代碼欄位，不用等切換分頁才更新
+  el('qrAnnouncementNo').value = data.activity_code;
+  el('filterAnnouncementNo').value = data.activity_code;
 });
 
 el('catAdd').addEventListener('click', ()=>{
@@ -1244,7 +1250,7 @@ el('formTemplateInput').addEventListener('input', ()=>{
 });
 
 document.querySelector('[data-tab="tab2"]').addEventListener('click', ()=>{
-  if(data && data.activity_code && !el('qrAnnouncementNo').value){
+  if(data && data.activity_code){
     el('qrAnnouncementNo').value = data.activity_code;
   }
 });
@@ -1306,7 +1312,7 @@ el('downloadQrBtn').addEventListener('click', ()=>{
 let rosterData = []; // {timestamp, name, id4, category, examNo}
 
 document.querySelector('[data-tab="tab3"]').addEventListener('click', ()=>{
-  if(data && data.activity_code && !el('filterAnnouncementNo').value){
+  if(data && data.activity_code){
     el('filterAnnouncementNo').value = data.activity_code;
   }
 });
