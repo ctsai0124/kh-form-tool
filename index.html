@@ -228,7 +228,7 @@
     .tabnav{display:none !important;}
     .section-block .desc, .inline-field, #printScoreBtn, #addManualRowBtn,
     #genQrBtn, #downloadQrBtn, #fetchRosterBtn, #toScoreBtn,
-    #produceBtn, #produceQrBox, #produceDownloadQrBtn, details.rawjson{display:none !important;}
+    #produceBtn, #produceQrBox, #produceDownloadQrBtn, #printPosterBtn, details.rawjson{display:none !important;}
   }
 
   /* --- tab navigation --- */
@@ -454,8 +454,9 @@
         <button class="primary" id="produceBtn" style="width:100%;padding:12px;font-size:15px;">產生報到 QR code（並寄送這場甄選資訊到信箱）</button>
         <div class="status" id="produceStatus"></div>
         <div id="produceQrBox" style="display:flex;justify-content:center;"></div>
-        <div style="text-align:center;">
+        <div style="text-align:center;display:flex;gap:8px;justify-content:center;">
           <button class="secondary" id="produceDownloadQrBtn" style="display:none;">下載 QR code 圖片</button>
+          <button class="secondary" id="printPosterBtn" style="display:none;">列印 QR 海報（A4）</button>
         </div>
 
         <!-- 活動代碼移到最底部，避免誤觸重新產生 -->
@@ -1100,10 +1101,43 @@ function setProduceStatus(msg, cls){
   box.innerHTML = msg || '';
 }
 
+/* 檢查通知信箱格式：可多個（逗號/分號分隔），每一個都要像正常 email */
+function invalidEmails(raw){
+  return (raw||'').split(/[,，;；\s]+/).map(s=>s.trim()).filter(Boolean)
+    .filter(e => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e));
+}
+
+let alreadyProduced = false; // 防止重複按「產生」重複送紀錄＋重複寄信
+
 el('produceBtn').addEventListener('click', ()=>{
   if(!data) return;
 
+  // ---- 必填檢查（缺什麼講什麼，全部擋下來才不會送出空資料、寄空信）----
+  const missing = [];
+  if(!(data.announcement_title||'').trim()) missing.push('簡章名稱');
+  if(!(data.announcement_no||'').trim())    missing.push('簡章編號');
+  if(!(data.position_type||'').trim())      missing.push('職缺類型');
+  if(!(data.notify_emails||'').trim())      missing.push('通知信箱');
+  if(missing.length){
+    setProduceStatus('請先填寫：<b>' + missing.join('、') + '</b>，再按「產生」。', 'err');
+    return;
+  }
+  const badEmails = invalidEmails(data.notify_emails);
+  if(badEmails.length){
+    setProduceStatus('通知信箱格式看起來不對：<b>' + escapeHtml(badEmails.join('、')) +
+      '</b>，請確認有 @ 和網域（例如 name@school.kh.edu.tw）。', 'err');
+    return;
+  }
+
+  // ---- 重複按防護：已產生過就要明確確認才重做（會重複送紀錄＋重複寄信）----
+  if(alreadyProduced){
+    const ok = confirm('這場甄選已經產生過了。\n再按一次會「重複」送出一筆甄選紀錄、並再寄一封通知信。\n\n確定要重新產生嗎？');
+    if(!ok) return;
+  }
+
   submitToRecordForm();
+  alreadyProduced = true;
+  el('produceBtn').textContent = '已產生完成 ✓（再按會重複寄信，需確認）';
 
   // 同步附加工具分頁的活動代碼欄位
   el('qrAnnouncementNo').value = data.activity_code;
@@ -1130,25 +1164,81 @@ el('produceBtn').addEventListener('click', ()=>{
     correctLevel: QRCode.CorrectLevel.M
   });
   el('produceDownloadQrBtn').style.display = 'inline-block';
+  el('printPosterBtn').style.display = 'inline-block';
 
   setProduceStatus(
-    '已送出這場甄選的紀錄，Apps Script 會自動寄一封含這場甄選資訊＋QR code 圖片的信到'
-    + (data.notify_emails ? '「'+escapeHtml(data.notify_emails)+'」' : '通知信箱（目前還沒填，請補填後重新按一次）')
-    + (data.notify_emails ? '，考生報到後也會再收到成績表通知' : '')
-    + '。QR code 已就地產生，可直接列印或下載給考生現場掃描。',
+    '已送出這場甄選的紀錄，系統會自動寄一封含這場甄選資訊＋QR code 圖片的信到「'
+    + escapeHtml(data.notify_emails)
+    + '」，考生報到後也會再收到成績表通知。QR code 已就地產生，可下載、或按「列印 QR 海報」直接印一張 A4 貼在報到處。',
     'ok'
   );
 });
-el('produceDownloadQrBtn').addEventListener('click', ()=>{
+
+/* 任一欄位改動後解除「已產生」狀態（視為在建立另一場新甄選） */
+['f_announcement_title','f_announcement_no','f_notify_emails'].forEach(id=>{
+  el(id).addEventListener('input', ()=>{
+    if(alreadyProduced){
+      alreadyProduced = false;
+      el('produceBtn').textContent = '產生報到 QR code（並寄送這場甄選資訊到信箱）';
+      el('produceDownloadQrBtn').style.display = 'none';
+      el('printPosterBtn').style.display = 'none';
+      el('produceQrBox').innerHTML = '';
+      setProduceStatus('');
+    }
+  });
+});
+document.querySelectorAll('input[name="posType"]').forEach(r=>{
+  r.addEventListener('change', ()=>{
+    if(alreadyProduced){
+      alreadyProduced = false;
+      el('produceBtn').textContent = '產生報到 QR code（並寄送這場甄選資訊到信箱）';
+      el('produceDownloadQrBtn').style.display = 'none';
+      el('printPosterBtn').style.display = 'none';
+      el('produceQrBox').innerHTML = '';
+      setProduceStatus('');
+    }
+  });
+});
+
+function getQrDataUrl(){
   const box = el('produceQrBox');
   const img = box.querySelector('img');
   const canvas = box.querySelector('canvas');
-  const src = (img && img.src) ? img.src : (canvas ? canvas.toDataURL() : null);
+  return (img && img.src) ? img.src : (canvas ? canvas.toDataURL() : null);
+}
+
+el('produceDownloadQrBtn').addEventListener('click', ()=>{
+  const src = getQrDataUrl();
   if(!src) return;
   const link = document.createElement('a');
   link.download = 'checkin-qrcode.png';
   link.href = src;
   link.click();
+});
+
+/* 列印 A4 QR 海報：大標題＋超大 QR＋簡單指示，直接貼在報到處 */
+el('printPosterBtn').addEventListener('click', ()=>{
+  const src = getQrDataUrl();
+  if(!src) return;
+  const title = `${data.announcement_title||''}${data.announcement_no||''}${data.position_type||''}甄選`;
+  const w = window.open('', '_blank');
+  if(!w){ alert('瀏覽器擋下了新視窗，請允許彈出視窗後再試一次'); return; }
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>報到 QR 海報</title>
+    <style>
+      @page{ size:A4 portrait; margin:20mm; }
+      body{ font-family:"Noto Serif TC","PMingLiU",serif; text-align:center; margin:0; padding:40px 20px; }
+      h1{ font-size:30px; line-height:1.5; margin:0 0 10px; }
+      h2{ font-size:24px; font-weight:600; margin:0 0 36px; }
+      img{ width:340px; height:340px; }
+      .hint{ font-size:20px; margin-top:36px; line-height:1.8; }
+    </style></head><body>
+    <h1>${title.replace(/</g,'&lt;')}</h1>
+    <h2>現 場 報 到</h2>
+    <img src="${src}">
+    <div class="hint">請考生以手機掃描 QR code<br>填寫姓名、身分證後4碼與報考科別完成報到</div>
+    <script>window.onload = function(){ window.print(); };<\/script>
+    </body></html>`);
+  w.document.close();
 });
 
 /* ==================================================================
