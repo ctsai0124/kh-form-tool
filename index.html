@@ -2,9 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<title>簡章轉報名表工具（原型）</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<title>甄選報到系統（原型）</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
@@ -76,24 +74,6 @@
     border-bottom:1px solid var(--line);
     letter-spacing:.04em;
   }
-
-  .dropzone{
-    border:2px dashed var(--line);
-    border-radius:6px;
-    padding:26px 14px;
-    text-align:center;
-    font-family:system-ui,sans-serif;
-    font-size:13.5px;
-    color:var(--muted);
-    cursor:pointer;
-    transition:border-color .15s, background .15s;
-  }
-  .dropzone.drag{
-    border-color:var(--accent);
-    background:var(--accent-soft);
-  }
-  .dropzone strong{color:var(--ink);}
-  .dropzone input{display:none;}
 
   .filepill{
     display:flex;
@@ -182,36 +162,54 @@
     color:var(--ink);
   }
   .field-row textarea{resize:vertical;min-height:44px;}
-  .cat-tags{
-    display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;
-  }
-  .cat-tag{
-    display:flex;align-items:center;gap:6px;
-    font-family:system-ui,sans-serif;font-size:12px;
-    background:#f4f1ea;border:1px solid var(--line);
-    padding:4px 8px;border-radius:14px;
-  }
-  .cat-tag button{
-    border:none;background:none;color:var(--muted);cursor:pointer;font-size:13px;line-height:1;
-  }
-  .addcat{
-    display:flex;gap:6px;margin-top:6px;
-  }
-  .addcat input{flex:1;font-size:12.5px;padding:5px 7px;}
-  .addcat button{
-    font-family:system-ui,sans-serif;font-size:12px;
-    border:1px solid var(--accent);color:var(--accent);background:none;
-    border-radius:3px;padding:4px 10px;cursor:pointer;
-  }
-
-  .examitem-row{
-    display:grid;grid-template-columns:1fr 70px auto;gap:6px;margin-bottom:6px;
-  }
-  .examitem-row input{font-size:12.5px;padding:5px 7px;}
-  .examitem-row button{border:none;background:none;color:var(--muted);cursor:pointer;}
 
   .divider{
     border:none;border-top:1px solid var(--line);margin:16px 0;
+  }
+
+  /* --- 使用流程指引 --- */
+  .flow-guide{
+    display:flex;
+    align-items:stretch;
+    justify-content:space-between;
+    gap:4px;
+    flex-wrap:wrap;
+  }
+  .flow-step{
+    flex:1;
+    min-width:120px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    text-align:center;
+    gap:6px;
+  }
+  .flow-num{
+    width:26px;height:26px;
+    border-radius:50%;
+    background:var(--accent);
+    color:#fff;
+    font-family:system-ui,sans-serif;
+    font-size:13px;font-weight:700;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .flow-text{
+    font-family:system-ui,sans-serif;
+    font-size:11.5px;
+    line-height:1.55;
+    color:var(--muted);
+  }
+  .flow-text b{color:var(--ink);font-size:12.5px;}
+  .flow-arrow{
+    align-self:center;
+    color:var(--accent);
+    font-size:16px;
+    font-family:system-ui,sans-serif;
+    padding:0 2px;
+  }
+  @media (max-width:560px){
+    .flow-arrow{display:none;}
+    .flow-step{min-width:46%;}
   }
 
   details.rawjson summary{
@@ -222,110 +220,15 @@
     max-height:220px;overflow:auto;white-space:pre-wrap;word-break:break-all;
   }
 
-  /* --- preview / printable form --- */
-  .preview-toolbar{
-    display:flex;justify-content:space-between;align-items:center;
-    margin-bottom:14px;
-  }
-  .preview-toolbar .hint{
-    font-family:system-ui,sans-serif;font-size:12px;color:var(--muted);
-  }
-
-  .doc-page{
-    background:#fff;
-    border:1px solid var(--line);
-    padding:34px 40px;
-    margin-bottom:26px;
-    font-size:14px;
-  }
-  .doc-page h3.formtitle{
-    text-align:center;
-    font-size:16.5px;
-    margin:0 0 16px;
-    letter-spacing:.05em;
-  }
-  table.form{
-    width:100%;
-    border-collapse:collapse;
-    margin-bottom:14px;
-  }
-  table.form td, table.form th{
-    border:1px solid var(--ink);
-    padding:7px 9px;
-    vertical-align:middle;
-    font-size:13.5px;
-  }
-  table.form th{
-    background:#f6f3ec;
-    font-weight:600;
-    white-space:nowrap;
-  }
-  .label-cell{
-    background:#f6f3ec;
-    font-weight:600;
-    white-space:nowrap;
-    width:1%;
-  }
-  .photo-cell{
-    text-align:center;
-    color:var(--muted);
-    font-size:11px;
-    font-family:system-ui,sans-serif;
-  }
-  .photo-box{
-    width:90px;height:120px;
-    border:1px dashed var(--line);
-    margin:0 auto 6px;
-    display:flex;align-items:center;justify-content:center;
-    color:#b7b0a2;
-    font-size:11px;
-  }
-  .checklist{
-    font-size:12.5px;
-    line-height:2;
-  }
-  .checklist span{
-    display:inline-block;
-    margin-right:14px;
-    white-space:nowrap;
-  }
-  .box{
-    display:inline-block;width:11px;height:11px;
-    border:1px solid var(--ink);
-    margin-right:4px;
-    vertical-align:-1px;
-  }
-  .note-block{
-    font-size:12.5px;
-    margin-top:10px;
-    color:var(--ink);
-  }
-  .note-block b{display:inline;}
-  .sig-block{
-    margin-top:26px;
-    font-size:13.5px;
-    line-height:2.1;
-  }
-  .sig-line{
-    display:inline-block;
-    border-bottom:1px solid var(--ink);
-    min-width:220px;
-  }
-  .to-line{
-    margin:20px 0 10px;
-    font-size:13.5px;
-  }
-
   @media print{
-    header.top, .layout > .panel:first-child, .preview-toolbar, details.rawjson{display:none !important;}
+    header.top, .layout > .panel:first-child, details.rawjson{display:none !important;}
     .layout{display:block;}
-    .doc-page{border:none;margin:0;padding:0;page-break-after:always;}
     body{background:#fff;}
     .app{padding:0;max-width:none;}
     .tabnav{display:none !important;}
     .section-block .desc, .inline-field, #printScoreBtn, #addManualRowBtn,
     #genQrBtn, #downloadQrBtn, #fetchRosterBtn, #toScoreBtn,
-    #produceBtn, details.rawjson{display:none !important;}
+    #produceBtn, #produceQrBox, #produceDownloadQrBtn, details.rawjson{display:none !important;}
   }
 
   /* --- tab navigation --- */
@@ -351,6 +254,10 @@
     color:var(--accent);
     border-bottom-color:var(--accent);
     font-weight:600;
+  }
+  .tabnav button.tab-btn-extra{
+    font-size:12px;
+    padding:10px 10px;
   }
   .tabpanel{display:none;}
   .tabpanel.active{display:block;}
@@ -469,135 +376,108 @@
 
   <header class="top">
     <div>
-      <h1>簡章轉報名表工具</h1>
+      <h1>甄選報到系統</h1>
     </div>
-    <div class="sub">原型 · 簡章解析 → 報名表 → 報到 QR code → 即時名單 → 甄選成績表</div>
+    <div class="sub">填寫甄選資料 → 產生報到 QR code → 考生掃碼報到 → 成績表自動寄到信箱</div>
   </header>
 
   <div class="tabnav">
-    <button class="tab-btn active" data-tab="tab1">① 簡章解析／報名表</button>
-    <button class="tab-btn" data-tab="tab2">② 報到 QR code</button>
-    <button class="tab-btn" data-tab="tab3">③ 即時報到名單</button>
-    <button class="tab-btn" data-tab="tab4">④ 甄選成績表</button>
+    <button class="tab-btn active" data-tab="tab1">建立甄選報到</button>
+    <span style="font-family:system-ui,sans-serif;font-size:11.5px;color:var(--muted);align-self:center;margin:0 4px 0 14px;">附加工具：</span>
+    <button class="tab-btn tab-btn-extra" data-tab="tab2">報到 QR code</button>
+    <button class="tab-btn tab-btn-extra" data-tab="tab3">即時報到名單</button>
+    <button class="tab-btn tab-btn-extra" data-tab="tab4">成績表（備用）</button>
   </div>
 
   <div id="tab1" class="tabpanel active">
-  <div class="layout">
+  <div style="max-width:720px;margin:0 auto;">
 
-    <!-- LEFT: upload + extracted fields -->
-    <div class="panel">
-      <h2>① 上傳簡章</h2>
-      <div class="dropzone" id="dropzone">
-        <div>將簡章 PDF 拖曳到此，或<br><strong>點擊選擇檔案</strong></div>
-        <div style="margin-top:6px;font-size:11.5px;">支援一般 PDF 及掃描版 PDF</div>
-        <input type="file" id="fileInput" accept="application/pdf">
-      </div>
-      <div id="filePill"></div>
-      <button class="primary" id="parseBtn" disabled>解析簡章內容</button>
-      <div class="status" id="statusLine"></div>
-      <div class="status" id="modeLine" style="display:none;"></div>
-
-      <hr class="divider" id="fieldsDivider" style="display:none;">
-
-      <div id="fieldsWrap" style="display:none;">
-        <h2 style="border:none;padding:0;margin-bottom:10px;">② 核對 / 修改判讀結果</h2>
-
-        <div class="field-row"><label>學校全銜（含區）</label><input id="f_school_name"></div>
-        <div class="field-row"><label>學校簡稱（表頭用）</label><input id="f_school_short"></div>
-        <div class="field-row"><label>職缺類型（如：代理教師／代課教師／幼兒園代理教師／專任輔導教師）</label><input id="f_position_type"></div>
-        <div class="field-row"><label>簡章編號（如：第2號第2次）</label><input id="f_announcement_no"></div>
-        <div class="field-row">
-          <label>活動代碼（系統自動產生，QR code／報到查找都用這組，確保多校共用不撞號）</label>
-          <div style="display:flex;gap:6px;">
-            <input id="f_activity_code" style="flex:1;">
-            <button type="button" id="regenCodeBtn" class="secondary" style="white-space:nowrap;">重新產生</button>
-          </div>
+    <!-- 使用流程指引 -->
+    <div class="panel" style="padding:16px 20px;">
+      <div class="flow-guide">
+        <div class="flow-step">
+          <div class="flow-num">1</div>
+          <div class="flow-text"><b>填寫甄選資料</b><br>簡章名稱、編號、<br>職缺類型、通知信箱</div>
         </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">
+          <div class="flow-num">2</div>
+          <div class="flow-text"><b>按「產生」</b><br>QR code 就地產生，<br>並自動寄到通知信箱</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">
+          <div class="flow-num">3</div>
+          <div class="flow-text"><b>列印 QR code</b><br>張貼在甄試<br>報到處</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">
+          <div class="flow-num">4</div>
+          <div class="flow-text"><b>考生掃碼報到</b><br>成績表自動寄到信箱，<br>列印最新一封即可</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>建立甄選報到</h2>
+
+      <div id="fieldsWrap">
+
         <div class="field-row">
-          <label>通知信箱（考生報到後自動寄信通知，可多人，逗號分隔）</label>
+          <label>簡章名稱</label>
+          <input id="f_announcement_title" placeholder="例如：高雄市OO區OO國小115學年度">
+        </div>
+
+        <div class="field-row"><label>簡章編號（如：第2號第2次）</label><input id="f_announcement_no"></div>
+
+        <div class="field-row">
+          <label>職缺類型</label>
+          <div id="positionTypeChoices" style="display:flex;flex-wrap:wrap;gap:12px 16px;font-family:system-ui,sans-serif;font-size:13.5px;margin-bottom:6px;">
+            <label style="display:flex;align-items:center;gap:5px;cursor:pointer;white-space:nowrap;"><input type="radio" name="posType" value="代理教師">代理教師</label>
+            <label style="display:flex;align-items:center;gap:5px;cursor:pointer;white-space:nowrap;"><input type="radio" name="posType" value="代課教師">代課教師</label>
+            <label style="display:flex;align-items:center;gap:5px;cursor:pointer;white-space:nowrap;"><input type="radio" name="posType" value="專輔教師">專輔教師</label>
+            <label style="display:flex;align-items:center;gap:5px;cursor:pointer;white-space:nowrap;"><input type="radio" name="posType" value="幼兒園代理教師">幼兒園代理教師</label>
+            <label style="display:flex;align-items:center;gap:5px;cursor:pointer;white-space:nowrap;"><input type="radio" name="posType" value="教保員">教保員</label>
+            <label style="display:flex;align-items:center;gap:5px;cursor:pointer;white-space:nowrap;"><input type="radio" name="posType" value="代理教保員">代理教保員</label>
+            <label style="display:flex;align-items:center;gap:5px;cursor:pointer;white-space:nowrap;"><input type="radio" name="posType" value="特教助理員">特教助理員</label>
+            <label style="display:flex;align-items:center;gap:5px;cursor:pointer;white-space:nowrap;"><input type="radio" name="posType" value="特教代理教師">特教代理教師</label>
+            <label style="display:flex;align-items:center;gap:5px;cursor:pointer;white-space:nowrap;"><input type="radio" name="posType" value="特教代課教師">特教代課教師</label>
+            <label style="display:flex;align-items:center;gap:5px;cursor:pointer;white-space:nowrap;"><input type="radio" name="posType" value="職員">職員</label>
+            <label style="display:flex;align-items:center;gap:5px;cursor:pointer;white-space:nowrap;"><input type="radio" name="posType" value="__other__">其他</label>
+          </div>
+          <input id="f_position_type_other" placeholder="其他職缺類型，請填寫" style="display:none;">
+        </div>
+
+        <div class="field-row">
+          <label>通知信箱（承辦人，報到後自動寄信通知，可多人以逗號分隔）</label>
           <input id="f_notify_emails" placeholder="例如 a@school.edu.tw, b@school.edu.tw">
         </div>
 
-        <div class="field-row">
-          <label>報考組別 / 類科</label>
-          <div class="cat-tags" id="catTags"></div>
-          <div class="addcat">
-            <input id="catInput" placeholder="新增組別後按「加入」">
-            <button type="button" id="catAdd">加入</button>
-          </div>
-        </div>
-
-        <div class="field-row"><label>名額</label><input id="f_quota"></div>
-        <div class="field-row"><label>聘任期限</label><input id="f_employment_period"></div>
-
-        <div class="field-row"><label>報名時間</label><input id="f_registration_date"></div>
-        <div class="field-row"><label>報名地點</label><input id="f_registration_location"></div>
-        <div class="field-row"><label>聯絡人 / 電話</label><input id="f_contact"></div>
-        <div class="field-row"><label>報名費</label><input id="f_registration_fee"></div>
-
-        <div class="field-row"><label>甄試時間</label><input id="f_exam_date"></div>
-        <div class="field-row"><label>甄試地點</label><input id="f_exam_location"></div>
-
-        <div class="field-row">
-          <label>甄試項目與比例</label>
-          <div id="examItems"></div>
-          <div class="addcat">
-            <button type="button" id="examAdd" class="secondary" style="width:100%;">+ 新增甄試項目</button>
-          </div>
-        </div>
-
-        <div class="field-row"><label>最低錄取分數</label><input id="f_min_score"></div>
-        <div class="field-row"><label>成績公告時間</label><input id="f_result_date"></div>
-        <div class="field-row"><label>複查截止時間</label><input id="f_review_deadline"></div>
-        <div class="field-row"><label>報到截止時間</label><input id="f_report_deadline"></div>
-
         <hr class="divider">
-        <details class="rawjson">
-          <summary>查看原始判讀 JSON（除錯用）</summary>
-          <pre id="rawJsonView">（尚未解析）</pre>
+
+        <button class="primary" id="produceBtn" style="width:100%;padding:12px;font-size:15px;">產生報到 QR code（並寄送這場甄選資訊到信箱）</button>
+        <div class="status" id="produceStatus"></div>
+        <div id="produceQrBox" style="display:flex;justify-content:center;"></div>
+        <div style="text-align:center;">
+          <button class="secondary" id="produceDownloadQrBtn" style="display:none;">下載 QR code 圖片</button>
+        </div>
+
+        <!-- 活動代碼移到最底部，避免誤觸重新產生 -->
+        <details style="margin-top:18px;">
+          <summary style="font-family:system-ui,sans-serif;font-size:12px;color:var(--muted);cursor:pointer;">進階：活動代碼（系統自動產生，一般不需要更動）</summary>
+          <div class="field-row" style="margin-top:8px;">
+            <div style="display:flex;gap:6px;">
+              <input id="f_activity_code" style="flex:1;">
+              <button type="button" id="regenCodeBtn" class="secondary" style="white-space:nowrap;">重新產生</button>
+            </div>
+          </div>
         </details>
       </div>
     </div>
 
-    <!-- RIGHT: rendered form preview -->
-    <div>
-      <div class="preview-toolbar">
-        <div class="hint">左側欄位修改後，右側表單會即時更新；確認無誤後可直接列印或另存 PDF。</div>
-        <div style="display:flex;gap:8px;">
-          <button class="secondary" id="printBtn">單純列印 / 另存 PDF</button>
-          <button class="primary" id="produceBtn" style="width:auto;padding:9px 20px;margin-top:0;">產生（列印＋記錄＋寄信提醒）</button>
-        </div>
-      </div>
-
-      <details class="rawjson" style="margin-bottom:14px;">
-        <summary>⚙️ 「記錄＋寄信提醒」一次性設定（給紀錄用 Google 表單 + 提醒 Email）</summary>
-        <div style="font-family:system-ui,sans-serif;font-size:12.5px;line-height:2;padding:10px 4px;">
-          <b>第一步：建一份「甄選紀錄」表單（跟②分頁報到表單是不同份，這份是共用後端用的對照表）</b><br>
-          1. 到 <a href="https://forms.google.com" target="_blank">forms.google.com</a> 建新表單，加入 4 個「簡答／段落」欄位：
-          　活動代碼、學校全銜、通知信箱、完整資料(段落)<br>
-          2. 右上角「⋮」→「取得預先填入的連結」→
-          四個欄位分別填入 <code>ANNO_NO</code>、<code>SCHOOL</code>、<code>NOTIFY_EMAILS</code>、<code>FULLDATA</code>
-          這四個文字（照打，供本工具辨識用；活動代碼欄位填 ANNO_NO 沒關係，這是內部代號）<br>
-          3. 取得連結後複製，貼在下方「紀錄表單預填連結範本」<br>
-          4. 這份表單連結的試算表，之後也要交給 Apps Script 讀取（見 README 的 Apps Script 設定章節）<br>
-          <br>
-          <div class="inline-field" style="margin-top:6px;">
-            <label>紀錄表單預填連結範本</label>
-            <input id="recordTemplateInput" placeholder="貼上含 ANNO_NO / SCHOOL / NOTIFY_EMAILS / FULLDATA 的預填連結">
-          </div>
-          <div class="inline-field">
-            <label>你自己的提醒 Email</label>
-            <input id="reminderEmailInput" placeholder="例如 you@example.com">
-          </div>
-          <div class="status" id="setupSavedHint" style="color:var(--ok);"></div>
-        </div>
-      </details>
-
-      <div id="previewWrap">
-        <div class="doc-page" style="text-align:center;color:var(--muted);font-family:system-ui,sans-serif;padding:70px 20px;">
-          尚未產生表單 — 請先於左側上傳並解析簡章。
-        </div>
-      </div>
+    <!-- 隱藏的一次性設定與相容用欄位（已於程式碼內建預設值，平常不顯示） -->
+    <div style="display:none;">
+      <input id="recordTemplateInput">
+      <div id="setupSavedHint"></div>
     </div>
 
   </div>
@@ -606,9 +486,9 @@
   <!-- TAB 2: QR code for check-in -->
   <div id="tab2" class="tabpanel">
     <div class="section-block">
-      <h2>② 產生報到 QR code</h2>
+      <h2>報到 QR code（附加工具）</h2>
       <div class="desc">
-        <b>活動代碼不用讓考生填。</b>本工具會把①分頁產生的活動代碼，直接「鎖」進 QR code 連結裡
+        <b>活動代碼不用讓考生填。</b>本工具會把「建立甄選報到」頁產生的活動代碼，直接「鎖」進 QR code 連結裡
         （用 Google 表單的「預先填寫」功能），考生掃到的表單裡活動代碼那格已經固定好、看不到也改不了，
         只需要填姓名／身分證後4碼／報考科別，不會有多場甄選、多校混在一起或打錯字的問題。<br>
         設定「範本連結」這個步驟只需要做**一次**，之後每場甄選只要換活動代碼重新產生 QR 就好。
@@ -616,7 +496,7 @@
 
       <div class="inline-field">
         <label>活動代碼</label>
-        <input id="qrAnnouncementNo" placeholder="會自動帶入①分頁產生的活動代碼，也可手動修改">
+        <input id="qrAnnouncementNo" placeholder="會自動帶入「建立甄選報到」頁的活動代碼，也可手動修改">
       </div>
       <div class="inline-field">
         <label>表單預填連結範本</label>
@@ -645,7 +525,7 @@
           6. 按「取得連結」→ 複製產生的網址 → 貼到上方「表單預填連結範本」欄位（瀏覽器會記住，之後不用再貼）<br>
           <br>
           這份表單、試算表全系統只建一次，所有學校、所有場次都共用這一份，靠「活動代碼」分辨彼此，
-          不會混淆。之後在③「即時報到名單」分頁，還需要把試算表「發布到網路」為 CSV，
+          不會混淆。之後在「即時報到名單」附加工具，還需要把試算表「發布到網路」為 CSV，
           才能讓本工具讀到即時資料；這份試算表也是 Apps Script 寄送通知信要監聽的對象（見 README）。
         </div>
       </details>
@@ -655,21 +535,25 @@
   <!-- TAB 3: live check-in roster from published Google Sheet CSV -->
   <div id="tab3" class="tabpanel">
     <div class="section-block">
-      <h2>③ 即時報到名單</h2>
+      <h2>即時報到名單（附加工具）</h2>
       <div class="desc">
-        把 Google 試算表「發布到網路」產生的 CSV 網址貼在下面（試算表選單：檔案 → 共用 → 發布到網路 → 格式選 CSV）。
-        本工具只會讀取，不會寫入你的試算表。名單會依「活動代碼」篩選，並依報到時間先後，在各科別內自動編上准考證號碼。
+        名單依「活動代碼」篩選（會自動帶入「建立甄選報到」頁的代碼），並依報到時間先後，在各科別內自動編上准考證號碼。
+        本工具只會讀取，不會寫入試算表。
       </div>
 
       <div class="inline-field">
-        <label>試算表 CSV 網址</label>
-        <input id="csvUrlInput" placeholder="https://docs.google.com/spreadsheets/d/e/.../pub?output=csv">
-      </div>
-      <div class="inline-field">
         <label>活動代碼（篩選用）</label>
-        <input id="filterAnnouncementNo" placeholder="會自動帶入①分頁產生的活動代碼">
+        <input id="filterAnnouncementNo" placeholder="會自動帶入「建立甄選報到」頁的活動代碼">
       </div>
       <button class="primary" id="fetchRosterBtn" style="width:auto;padding:9px 20px;">讀取 / 重新整理報到名單</button>
+
+      <details style="margin-top:10px;">
+        <summary style="font-family:system-ui,sans-serif;font-size:11.5px;color:var(--muted);cursor:pointer;">進階：報到試算表 CSV 網址（系統已內建，一般不需要更動）</summary>
+        <div class="inline-field" style="margin-top:8px;">
+          <label>試算表 CSV 網址</label>
+          <input id="csvUrlInput" placeholder="https://docs.google.com/spreadsheets/d/e/.../pub?output=csv">
+        </div>
+      </details>
 
       <div class="status" id="rosterStatus"></div>
 
@@ -682,9 +566,9 @@
   <!-- TAB 4: score sheet -->
   <div id="tab4" class="tabpanel">
     <div class="section-block">
-      <h2>④ 甄選成績表</h2>
+      <h2>甄選成績表（備用，正式成績表已自動寄至信箱）</h2>
       <div class="desc">
-        依報到名單自動產生（也可以在③分頁還沒設定好之前，直接在這裡手動增加考生列來測試格式）。
+        依報到名單自動產生（也可以在名單還沒匯入之前，直接在這裡手動增加考生列來測試格式）。
         委員分數與平均為即時計算，「錄取資格」欄位請人事人員自行填寫判斷。
       </div>
 
@@ -717,521 +601,111 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
 });
 
 /* ---------------- state ---------------- */
-let uploadedBase64 = null;
-let uploadedArrayBuffer = null;
-let uploadedName = "";
-let data = null; // extracted / edited structured data
-let detectedMode = null; // 'text' | 'scan'
-let extractedPdfText = "";
-
-pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+// 不再有「上傳簡章→自動解析」這一步，人事人員直接在主頁手動填寫所有欄位。
+// data 一開始就是一筆空白資料，供下面的欄位輸入即時寫入。
+let data = null;
 
 const el = id => document.getElementById(id);
-
-/* Try to pull a text layer out of the PDF client-side.
-   Returns { text, hasTextLayer, pageCount } */
-async function detectAndExtractText(arrayBuffer){
-  const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer.slice(0) });
-  const pdf = await loadingTask.promise;
-  let full = "";
-  for(let i=1; i<=pdf.numPages; i++){
-    const page = await pdf.getPage(i);
-    const content = await page.getTextContent();
-    const pageText = content.items.map(it => it.str).join(" ");
-    full += pageText + "\n";
-  }
-  const meaningfulLen = full.replace(/\s/g,'').length;
-  // Heuristic: a real text layer yields roughly dozens+ of characters per page.
-  // Scanned PDFs with no OCR layer come back nearly empty.
-  const hasTextLayer = meaningfulLen > (pdf.numPages * 30) && meaningfulLen > 150;
-  return { text: full, hasTextLayer, pageCount: pdf.numPages };
-}
-
-/* ---------------- upload handling ---------------- */
-const dropzone = el('dropzone');
-const fileInput = el('fileInput');
-const filePill = el('filePill');
-const parseBtn = el('parseBtn');
-const statusLine = el('statusLine');
-
-dropzone.addEventListener('click', () => fileInput.click());
-['dragover','dragenter'].forEach(ev=>dropzone.addEventListener(ev, e=>{e.preventDefault();dropzone.classList.add('drag');}));
-['dragleave','drop'].forEach(ev=>dropzone.addEventListener(ev, e=>{e.preventDefault();dropzone.classList.remove('drag');}));
-dropzone.addEventListener('drop', e=>{
-  const f = e.dataTransfer.files[0];
-  if(f) handleFile(f);
-});
-fileInput.addEventListener('change', e=>{
-  const f = e.target.files[0];
-  if(f) handleFile(f);
-});
-
-function handleFile(file){
-  if(file.type !== 'application/pdf'){
-    setStatus('請上傳 PDF 檔案', 'err');
-    return;
-  }
-  uploadedName = file.name;
-  parseBtn.disabled = true;
-  el('modeLine').style.display = 'none';
-  filePill.innerHTML = `<div class="filepill">📄 ${escapeHtml(file.name)}</div>`;
-  setStatus('正在檢查 PDF 是否含有文字層…','loading');
-
-  const reader = new FileReader();
-  reader.onload = async () => {
-    const dataUrl = reader.result;
-    uploadedBase64 = dataUrl.split(',')[1];
-    uploadedArrayBuffer = base64ToArrayBuffer(uploadedBase64);
-    try{
-      const { text, hasTextLayer, pageCount } = await detectAndExtractText(uploadedArrayBuffer);
-      extractedPdfText = text;
-      detectedMode = hasTextLayer ? 'text' : 'scan';
-      const modeEl = el('modeLine');
-      modeEl.style.display = 'flex';
-      modeEl.className = 'status ' + (hasTextLayer ? 'ok' : '');
-      modeEl.innerHTML = hasTextLayer
-        ? `✅ 偵測到原生文字層（共 ${pageCount} 頁）— 將使用「純文字模式」解析，成本極低`
-        : `⚠️ 偵測為掃描影像 PDF（共 ${pageCount} 頁，無文字層）— 將使用「本機 OCR 模式」辨識前數頁`;
-      setStatus('檢查完成，可以按下方按鈕解析','ok');
-      parseBtn.disabled = false;
-    }catch(err){
-      console.error(err);
-      // If pdf.js itself fails to parse the file, fall back to image mode.
-      detectedMode = 'scan';
-      extractedPdfText = "";
-      const modeEl = el('modeLine');
-      modeEl.style.display = 'flex';
-      modeEl.className = 'status';
-      modeEl.innerHTML = `⚠️ 無法自動偵測文字層，將以「影像判讀模式」處理`;
-      setStatus('檢查完成，可以按下方按鈕解析','ok');
-      parseBtn.disabled = false;
-    }
-  };
-  reader.onerror = () => setStatus('檔案讀取失敗，請重新選擇','err');
-  reader.readAsDataURL(file);
-}
-
-function base64ToArrayBuffer(base64){
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for(let i=0;i<binary.length;i++) bytes[i] = binary.charCodeAt(i);
-  return bytes.buffer;
-}
-
-function setStatus(msg, cls){
-  statusLine.className = 'status ' + (cls||'');
-  statusLine.innerHTML = msg ? (cls==='loading' ? `<div class="spinner"></div>${msg}` : msg) : '';
-}
 
 function escapeHtml(s){
   return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
-/* ---------------- 100% local extraction: no API key, no server, no cost ---------------- */
-const OCR_MAX_PAGES = 4; // key fields consistently sit on the first 1-2 pages; cap to keep browser OCR fast
-let tesseractWorker = null;
-
-async function getTesseractWorker(){
-  if(tesseractWorker) return tesseractWorker;
-  tesseractWorker = await Tesseract.createWorker('chi_tra', 1, {
-    logger: m => {
-      if(m.status === 'recognizing text'){
-        setStatus(`OCR 辨識中…（${Math.round((m.progress||0)*100)}%）`, 'loading');
-      }
-    }
-  });
-  return tesseractWorker;
-}
-
-async function ocrScannedPdf(arrayBuffer){
-  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer.slice(0) }).promise;
-  const pagesToRead = Math.min(pdf.numPages, OCR_MAX_PAGES);
-  const worker = await getTesseractWorker();
-  let full = "";
-  for(let i=1; i<=pagesToRead; i++){
-    setStatus(`正在以 OCR 辨識第 ${i}/${pagesToRead} 頁…`, 'loading');
-    const page = await pdf.getPage(i);
-    const viewport = page.getViewport({ scale: 2.0 });
-    const canvas = document.createElement('canvas');
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
-    const ctx = canvas.getContext('2d');
-    await page.render({ canvasContext: ctx, viewport }).promise;
-    const { data: { text } } = await worker.recognize(canvas);
-    full += text + "\n";
-  }
-  return full;
-}
-
-/* ---- rule-based field parser (regex only, no LLM) ---- */
-function firstMatch(re, text, groupIdx=1){
-  const m = text.match(re);
-  return m ? m[groupIdx].trim() : "";
-}
-function allMatches(re, text){
-  return [...text.matchAll(re)];
-}
-function shortenSchoolName(name){
-  if(!name) return "";
-  let s = name.replace(/^[\u4e00-\u9fa5]{2,3}[市縣]/, "");
-  s = s.replace(/^[\u4e00-\u9fa5]{1,3}[區鄉鎮市]/, "");
-  s = s.replace(/國民小學$/, "國小");
-  return s;
-}
-function cleanLine(s){
-  return (s||"").replace(/[ \t]+/g,' ').replace(/^[\s、:：.。]+|[\s。]+$/g,'').trim();
-}
-
-function parseFieldsFromText(raw){
-  // Normalize a few OCR/full-width quirks so regexes match more reliably.
-  const text = raw.replace(/\r/g,'').replace(/﹕|︰/g,'：').replace(/﹒/g,'.').replace(/[ \t]+/g,' ');
-
-  const school_name = firstMatch(/([\u4e00-\u9fa5]{2,3}[市縣][\u4e00-\u9fa5]{0,4}[區鄉鎮市]?[\u4e00-\u9fa5]{1,6}國民?小學)/, text)
-                    || firstMatch(/([\u4e00-\u9fa5]{2,3}[市縣][\u4e00-\u9fa5]{2,10}幼兒園)/, text);
-  const school_short = shortenSchoolName(school_name);
-
-  const announcement_no = firstMatch(/(第[一二三四五六七八九十\d]+號第[一二三四五六七八九十\d]+次)/, text);
-
-  const posCandidates = ['幼兒園代理教師','專任輔導教師','巡迴輔導教師','代理教師','代課教師','代理專輔教師','專輔教師'];
-  let position_type = "";
-  for(const p of posCandidates){ if(text.includes(p)){ position_type = p; break; } }
-
-  const categories = [];
-  allMatches(/([\u4e00-\u9fa5A-Za-z]{1,8})(?:代理|代課)(?:（?課）?)?正取/g, text).forEach(m=>{
-    const c = m[1].trim();
-    if(c && !categories.includes(c)) categories.push(c);
-  });
-
-  const quota = firstMatch(/(正取[^\n，,。；]{0,20}備取[^\n，,。；]{0,15})/, text);
-
-  const employment_period = firstMatch(/聘任期[間限][:：]?\s*(自[^\n)）]{0,30}止)/, text)
-                          || firstMatch(/(自\d+年\d+月\d+日至\d+年\d+月\d+日止?)/, text);
-
-  const registration_date = cleanLine(firstMatch(/報名時間[:：]?\s*([^\n]{0,70})/, text));
-  let registration_location = cleanLine(firstMatch(/地\s*址[:：]?\s*([^\n]{0,60})/, text));
-  if(!registration_location){
-    registration_location = cleanLine(firstMatch(/報名地點[:：]?\s*([^\n]{0,60})/, text));
-  }
-  const contact_person = cleanLine(firstMatch(/聯絡人[:：]?\s*([^\n]{0,20})/, text));
-  const contact_phone = cleanLine(firstMatch(/聯絡電話[:：]?\s*([0-9#\-\s]{6,20})/, text));
-  const registration_fee = firstMatch(/報名費[:：]?\s*([0-9,]{1,6}\s*元)/, text);
-
-  const exam_date = cleanLine(firstMatch(/甄試時間[:：]?\s*([^\n]{0,70})/, text));
-  const exam_location = cleanLine(firstMatch(/甄試地點[:：]?\s*([^\n]{0,60})/, text));
-
-  const exam_items = [];
-  allMatches(/(口試|試教|筆試|測驗|實作)[:：]?\s*(?:佔[^\d]{0,12})?(\d{1,3})\s*[%％]/g, text).forEach(m=>{
-    exam_items.push({ name: m[1], weight: m[2]+'%' });
-  });
-
-  const min_passing_score = firstMatch(/最低錄取分數\s*(\d{1,3})\s*分/, text);
-  const result_announcement_date = cleanLine(
-    firstMatch(/(?:甄試結果公告日期|成績公告|錄取公告)[:：]?\s*([^\n。]{0,40})/, text)
-  );
-  const score_review_deadline = cleanLine(
-    firstMatch(/複查[^\n]{0,6}時間[:：]?\s*([^\n。]{0,40})/, text)
-  );
-  const report_deadline = cleanLine(
-    firstMatch(/正取人員[^\n]{0,10}請於\s*([^\n，。]{0,40}?)(?:前)?報到/, text)
-  );
-
-  return {
-    school_name, school_short, position_type, announcement_no, categories,
-    quota, employment_period, registration_date, registration_location,
-    contact_person, contact_phone, registration_fee, exam_date, exam_location,
-    exam_items, min_passing_score, result_announcement_date, score_review_deadline,
-    report_deadline
-  };
-}
-
-parseBtn.addEventListener('click', async () => {
-  if(!uploadedBase64) return;
-  parseBtn.disabled = true;
-
-  try{
-    let sourceText = "";
-    if(detectedMode === 'text'){
-      setStatus('正在以純文字模式解析欄位…（不需要 OCR，幾乎瞬間完成）','loading');
-      sourceText = extractedPdfText;
-    } else {
-      setStatus(`正在以 OCR 辨識掃描頁面…（僅辨識前 ${OCR_MAX_PAGES} 頁，較花時間，請稍候）`,'loading');
-      sourceText = await ocrScannedPdf(uploadedArrayBuffer);
-    }
-
-    const parsed = parseFieldsFromText(sourceText);
-    data = normalize(parsed);
-    el('rawJsonView').textContent =
-      '--- 判讀出的結構化欄位 ---\n' + JSON.stringify(parsed, null, 2) +
-      '\n\n--- 原始擷取/OCR 文字（供核對）---\n' + sourceText.slice(0, 6000);
-    fillFieldsFromData();
-    el('fieldsDivider').style.display = 'block';
-    el('fieldsWrap').style.display = 'block';
-    // 順手同步②③分頁的活動代碼欄位，不用等切換分頁才更新
-    el('qrAnnouncementNo').value = data.activity_code;
-    el('filterAnnouncementNo').value = data.activity_code;
-    renderPreview();
-    setStatus(
-      (detectedMode === 'text' ? '（純文字模式）' : '（OCR 模式，僅前數頁）') +
-      '判讀完成 — 這是規則式判讀，準確率不如人工，請務必逐項核對左側欄位。',
-      'ok'
-    );
-  }catch(err){
-    console.error(err);
-    setStatus('解析失敗:'+err.message+'（請人工填寫左側欄位）','err');
-    if(!data){
-      data = normalize({});
-      fillFieldsFromData();
-      el('fieldsDivider').style.display = 'block';
-      el('fieldsWrap').style.display = 'block';
-      renderPreview();
-    }
-  }finally{
-    parseBtn.disabled = false;
-  }
-});
-
 function slugForCode(s){
-  return (s||'').replace(/[^\u4e00-\u9fa5A-Za-z0-9]/g,'').slice(0,10);
+  return (s||'').replace(/[^\u4e00-\u9fa5A-Za-z0-9]/g,'').slice(0,20);
 }
-function randomSuffix(){
-  return Math.random().toString(36).slice(2,6);
+/* 活動代碼＝簡章名稱＋簡章編號＋職缺類型（去除符號），**沒有隨機碼**。
+   刻意設計成「同一場考試不管重新整理頁面、按幾次產生，代碼永遠一樣」，
+   這樣所有考生的報到紀錄才會歸在同一場、成績表才能正確累積。
+   不同學校因為簡章名稱（含校名+學年度）不同，自然不會撞號；
+   職缺類型也納入代碼，同校同編號但不同職缺（例如同時招代理跟代課）也不會混在一起。 */
+function makeActivityCode(title, no, position){
+  return `${slugForCode(title)}_${slugForCode(no)}_${slugForCode(position)}`;
 }
 function normalize(p){
-  const school = p.school_short || p.school_name || "";
-  const anno = p.announcement_no || "";
+  p = p || {};
   return {
-    school_name: p.school_name || "",
-    school_short: p.school_short || "",
-    position_type: p.position_type || "",
+    announcement_title: p.announcement_title || "",
     announcement_no: p.announcement_no || "",
-    // 活動代碼：學校簡稱＋簡章編號＋隨機碼，確保多校共用同一套後端時全域不撞號。
+    position_type: p.position_type || "",
     // 這組代碼才是 QR code／即時名單／通知信查找真正比對用的 key；簡章編號只給人看。
-    activity_code: `${slugForCode(school)}_${slugForCode(anno)}_${randomSuffix()}`,
-    notify_emails: p.notify_emails || "",
-    categories: Array.isArray(p.categories) ? p.categories : [],
-    quota: p.quota || "",
-    employment_period: p.employment_period || "",
-    registration_date: p.registration_date || "",
-    registration_location: p.registration_location || "",
-    contact_person: p.contact_person || "",
-    contact_phone: p.contact_phone || "",
-    contact: [p.contact_person, p.contact_phone].filter(Boolean).join(' '),
-    registration_fee: p.registration_fee || "",
-    exam_date: p.exam_date || "",
-    exam_location: p.exam_location || "",
-    exam_items: Array.isArray(p.exam_items) && p.exam_items.length ? p.exam_items : [{name:"口試",weight:"50%"},{name:"試教",weight:"50%"}],
-    min_passing_score: p.min_passing_score || "",
-    result_announcement_date: p.result_announcement_date || "",
-    score_review_deadline: p.score_review_deadline || "",
-    report_deadline: p.report_deadline || ""
+    activity_code: makeActivityCode(p.announcement_title, p.announcement_no, p.position_type),
+    notify_emails: p.notify_emails || ""
   };
 }
+
+/* 頁面一載入就直接給一筆空白資料，讓主頁欄位可以馬上填寫，不需要任何上傳/解析步驟 */
+data = normalize({});
 
 /* ---------------- left panel <-> data binding ---------------- */
 const simpleFieldIds = {
-  f_school_name:'school_name', f_school_short:'school_short', f_position_type:'position_type',
-  f_announcement_no:'announcement_no', f_activity_code:'activity_code', f_notify_emails:'notify_emails',
-  f_quota:'quota', f_employment_period:'employment_period',
-  f_registration_date:'registration_date', f_registration_location:'registration_location',
-  f_contact:'contact', f_registration_fee:'registration_fee', f_exam_date:'exam_date',
-  f_exam_location:'exam_location', f_min_score:'min_passing_score', f_result_date:'result_announcement_date',
-  f_review_deadline:'score_review_deadline', f_report_deadline:'report_deadline'
+  f_announcement_title:'announcement_title',
+  f_announcement_no:'announcement_no', f_activity_code:'activity_code', f_notify_emails:'notify_emails'
 };
 
 function fillFieldsFromData(){
   Object.entries(simpleFieldIds).forEach(([domId,key])=>{
     el(domId).value = data[key] || '';
   });
-  renderCatTags();
-  renderExamItems();
+  fillPositionTypeFromData();
 }
+
+const POSITION_TYPE_OPTIONS = [
+  '代理教師','代課教師','專輔教師','幼兒園代理教師','教保員','代理教保員',
+  '特教助理員','特教代理教師','特教代課教師','職員'
+];
+
+function refreshActivityCode(){
+  data.activity_code = makeActivityCode(data.announcement_title, data.announcement_no, data.position_type);
+  el('f_activity_code').value = data.activity_code;
+  el('qrAnnouncementNo').value = data.activity_code;
+  el('filterAnnouncementNo').value = data.activity_code;
+}
+
+/* 依 data.position_type 設定radio選取狀態／「其他」文字框 */
+function fillPositionTypeFromData(){
+  const pos = data.position_type || '';
+  const isKnown = POSITION_TYPE_OPTIONS.includes(pos);
+  document.querySelectorAll('input[name="posType"]').forEach(r=>{
+    r.checked = pos ? (isKnown ? (r.value === pos) : (r.value === '__other__')) : false;
+  });
+  el('f_position_type_other').style.display = (pos && !isKnown) ? 'block' : 'none';
+  el('f_position_type_other').value = isKnown ? '' : pos;
+}
+
+document.querySelectorAll('input[name="posType"]').forEach(radio=>{
+  radio.addEventListener('change', ()=>{
+    const isOther = radio.value === '__other__';
+    el('f_position_type_other').style.display = isOther ? 'block' : 'none';
+    data.position_type = isOther ? (el('f_position_type_other').value || '') : radio.value;
+    if(isOther) el('f_position_type_other').focus();
+    refreshActivityCode();
+  });
+});
+el('f_position_type_other').addEventListener('input', ()=>{
+  const otherChecked = document.querySelector('input[name="posType"][value="__other__"]').checked;
+  if(otherChecked){
+    data.position_type = el('f_position_type_other').value || '';
+    refreshActivityCode();
+  }
+});
 
 Object.keys(simpleFieldIds).forEach(domId=>{
   document.addEventListener('input', e=>{
     if(e.target.id === domId){
       data[simpleFieldIds[domId]] = e.target.value;
-      renderPreview();
+      // 簡章名稱或簡章編號一改，活動代碼就即時跟著更新（見 makeActivityCode 的說明）
+      if(domId === 'f_announcement_title' || domId === 'f_announcement_no'){
+        refreshActivityCode();
+      }
     }
   });
 });
 
-function renderCatTags(){
-  const wrap = el('catTags');
-  wrap.innerHTML = '';
-  data.categories.forEach((c,i)=>{
-    const d = document.createElement('div');
-    d.className = 'cat-tag';
-    d.innerHTML = `<span>${escapeHtml(c)}</span><button type="button" data-i="${i}">✕</button>`;
-    d.querySelector('button').onclick = ()=>{ data.categories.splice(i,1); renderCatTags(); renderPreview(); };
-    wrap.appendChild(d);
-  });
-}
 el('regenCodeBtn').addEventListener('click', ()=>{
   if(!data) return;
-  data.activity_code = `${slugForCode(data.school_short||data.school_name)}_${slugForCode(data.announcement_no)}_${randomSuffix()}`;
-  el('f_activity_code').value = data.activity_code;
-  // 順手同步②③分頁的活動代碼欄位，不用等切換分頁才更新
-  el('qrAnnouncementNo').value = data.activity_code;
-  el('filterAnnouncementNo').value = data.activity_code;
+  refreshActivityCode();
 });
-
-el('catAdd').addEventListener('click', ()=>{
-  const v = el('catInput').value.trim();
-  if(v){ data.categories.push(v); el('catInput').value=''; renderCatTags(); renderPreview(); }
-});
-el('catInput').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); el('catAdd').click(); }});
-
-function renderExamItems(){
-  const wrap = el('examItems');
-  wrap.innerHTML = '';
-  data.exam_items.forEach((it,i)=>{
-    const row = document.createElement('div');
-    row.className = 'examitem-row';
-    row.innerHTML = `<input value="${escapeHtml(it.name)}" data-f="name" placeholder="項目名稱">
-                      <input value="${escapeHtml(it.weight)}" data-f="weight" placeholder="佔比">
-                      <button type="button">✕</button>`;
-    const [nameInput, weightInput] = row.querySelectorAll('input');
-    nameInput.oninput = ()=>{ it.name = nameInput.value; renderPreview(); };
-    weightInput.oninput = ()=>{ it.weight = weightInput.value; renderPreview(); };
-    row.querySelector('button').onclick = ()=>{ data.exam_items.splice(i,1); renderExamItems(); renderPreview(); };
-    wrap.appendChild(row);
-  });
-}
-el('examAdd').addEventListener('click', ()=>{
-  data.exam_items.push({name:'',weight:''});
-  renderExamItems();
-  renderPreview();
-});
-
-/* ---------------- preview rendering (matches 附表一/二/三 layout) ---------------- */
-function renderPreview(){
-  if(!data) return;
-  const d = data;
-  const catBoxes = (d.categories.length ? d.categories : ['(未指定組別)'])
-    .map(c=>`<span class="box"></span>${escapeHtml(c)}`).join('&nbsp;&nbsp;&nbsp;');
-
-  const examRows = d.exam_items.map(it=>`<tr><td>${escapeHtml(it.name)}</td><td>${escapeHtml(it.weight)}</td></tr>`).join('');
-
-  const title = `${escapeHtml(d.school_short||d.school_name)}115學年度${escapeHtml(d.position_type||'教師')}甄選報名表(${escapeHtml(d.announcement_no)})`;
-  const title2 = `${escapeHtml(d.school_short||d.school_name)}115學年度${escapeHtml(d.position_type||'教師')}甄選證(${escapeHtml(d.announcement_no)})`;
-
-  el('previewWrap').innerHTML = `
-
-  <div class="doc-page">
-    <div style="text-align:center;font-size:12px;color:var(--muted);font-family:system-ui,sans-serif;margin-bottom:8px;">附表一</div>
-    <h3 class="formtitle">${title}</h3>
-    <table class="form">
-      <tr><td class="label-cell">甄選證編號</td><td colspan="3"></td></tr>
-      <tr><td class="label-cell">報考組別</td><td colspan="3">${catBoxes}</td></tr>
-    </table>
-    <table class="form">
-      <tr>
-        <td class="label-cell">姓　　名</td><td></td>
-        <td class="label-cell">身分證統一編號</td><td></td>
-        <td class="photo-cell" rowspan="3" style="width:110px;">
-          <div class="photo-box">二吋照片</div>自行黏貼二吋<br>正面脫帽相片
-        </td>
-      </tr>
-      <tr>
-        <td class="label-cell">出生年月日</td><td>民國　　年　　月　　日</td>
-        <td class="label-cell">性　　別</td><td><span class="box"></span>男　<span class="box"></span>女</td>
-      </tr>
-      <tr>
-        <td class="label-cell">最高學歷科系</td><td></td>
-        <td class="label-cell">師資職前教育<br>課程修畢學校</td><td></td>
-      </tr>
-      <tr><td class="label-cell">住　　址</td><td colspan="4"></td></tr>
-      <tr><td class="label-cell">聯絡電話</td><td colspan="4">(H)住宅:　　　　　　(O)公司:　　　　　　(M)手機:</td></tr>
-    </table>
-    <table class="form">
-      <tr><th>服務單位</th><th>職稱</th><th>起訖日期</th><th>備註</th></tr>
-      <tr><td>&nbsp;</td><td></td><td>年　月　日至　　年　　月　　日</td><td></td></tr>
-      <tr><td>&nbsp;</td><td></td><td>年　月　日至　　年　　月　　日</td><td></td></tr>
-    </table>
-    <div class="checklist">
-      <b>應繳(掃描)證件:</b><br>
-      <span><span class="box"></span>1.報名表</span>
-      <span><span class="box"></span>2.甄選證</span>
-      <span><span class="box"></span>3.切結書</span>
-      <span><span class="box"></span>4.國民身分證</span>
-      <span><span class="box"></span>5.合格教師證書</span>
-      <span><span class="box"></span>5-1.特教合格證書</span>
-      <span><span class="box"></span>5-2.師資職前教育課程證明</span>
-      <span><span class="box"></span>6.最高學歷畢業證書</span>
-      <span><span class="box"></span>7.個人簡歷</span>
-      <span><span class="box"></span>8.身心障礙證明</span>
-      <span><span class="box"></span>9.兵役證明</span>
-      <span><span class="box"></span>10.警察刑事紀錄證明(可後補)</span>
-    </div>
-    <table class="form" style="margin-top:12px;">
-      <tr><td class="label-cell">合格教師證書</td><td class="label-cell" style="width:1%;">核發年月</td><td></td><td class="label-cell" style="width:1%;">字號</td><td></td></tr>
-      <tr><td class="label-cell">審查結果</td><td colspan="2"><span class="box"></span>准予報考　<span class="box"></span>資格不符</td><td class="label-cell">審查者簽章</td><td></td></tr>
-    </table>
-    <div class="note-block">
-      <b>報名時間:</b>${escapeHtml(d.registration_date)||'—'}　｜　<b>報名地點:</b>${escapeHtml(d.registration_location)||'—'}<br>
-      <b>聯絡方式:</b>${escapeHtml(d.contact)||'—'}　｜　<b>報名費:</b>${escapeHtml(d.registration_fee)||'—'}<br>
-      <b>聘任期限:</b>${escapeHtml(d.employment_period)||'—'}　｜　<b>名額:</b>${escapeHtml(d.quota)||'—'}
-    </div>
-  </div>
-
-  <div class="doc-page">
-    <div style="text-align:center;font-size:12px;color:var(--muted);font-family:system-ui,sans-serif;margin-bottom:8px;">附表二</div>
-    <h3 class="formtitle">${title2}</h3>
-    <table class="form">
-      <tr><td class="label-cell">甄選證編號</td><td colspan="3"></td></tr>
-      <tr><td class="label-cell">報考組別</td><td colspan="3">${catBoxes}</td></tr>
-      <tr>
-        <td class="label-cell">姓　　名</td><td></td>
-        <td class="photo-cell" colspan="2"><div class="photo-box" style="display:inline-flex;">照片黏貼處</div></td>
-      </tr>
-    </table>
-    <table class="form">
-      <tr><th>日期</th><th>時間</th><th>項目</th><th>試務委員簽章</th><th>備註</th></tr>
-      <tr><td>${escapeHtml(d.exam_date)||'　'}</td><td></td><td>報到</td><td>-----</td><td></td></tr>
-      <tr><td></td><td></td><td>試教</td><td></td><td></td></tr>
-      <tr><td></td><td></td><td>口試</td><td></td><td></td></tr>
-    </table>
-    <table class="form" style="max-width:260px;">
-      <tr><th>甄試項目</th><th>佔比</th></tr>
-      ${examRows}
-    </table>
-    <div class="note-block">
-      <b>甄試地點:</b>${escapeHtml(d.exam_location)||'—'}　｜　<b>最低錄取分數:</b>${escapeHtml(d.min_passing_score)||'—'}<br>
-      <b>成績公告:</b>${escapeHtml(d.result_announcement_date)||'—'}　｜　<b>複查截止:</b>${escapeHtml(d.score_review_deadline)||'—'}　｜　<b>報到截止:</b>${escapeHtml(d.report_deadline)||'—'}
-    </div>
-    <div class="note-block">
-      一、應考人請攜帶准考證準時報到。<br>
-      二、應考人應嚴守紀律不得擾亂試場秩序，有舞弊行為者，取消應考資格。<br>
-      三、報到時間與口試、試教試場位置於報名截止後公告本校網站。
-    </div>
-  </div>
-
-  <div class="doc-page">
-    <div style="text-align:center;font-size:12px;color:var(--muted);font-family:system-ui,sans-serif;margin-bottom:8px;">附表三</div>
-    <h3 class="formtitle">切　結　書</h3>
-    <p>本人　　　　　　　　　參加${escapeHtml(d.school_name||d.school_short)}115學年度${escapeHtml(d.position_type||'教師')}甄選(${escapeHtml(d.announcement_no)})，切結事項如次:</p>
-    <p>
-      一、本人無違反教育人員任用條例第31條、第33條，教師法第14條或其他不得擔任教育人員之情事、或證件不實之情形，並依政府資訊公開法授權有關機關查證及依甄選簡章之規定辦理。<br>
-      二、本人為中華民國國民。<br>
-      三、非大陸地區人民(但經許可進入臺灣地區且在臺灣地區設籍已滿10年者，不在此限)。<br>
-      四、應考人於錄取後，經發現偽造、變造所附證件、冒名頂替應考者，或有不得任用之情事者，取消錄取資格。<br>
-      五、本人同意為確保考試之公平性，考試過程全程錄影。
-    </p>
-    <p>如違反或未辦妥上述事項，願於錄取後無條件自動放棄錄取資格，絕無異議。</p>
-    <div class="to-line">此致</div>
-    <div>${escapeHtml(d.school_name)}</div>
-    <div class="sig-block">
-      具結人:<span class="sig-line"></span>(本欄務必親自簽名，勿以電腦登打)<br>
-      身分證字號:<span class="sig-line"></span><br>
-      住　　址:<span class="sig-line"></span><br>
-      手機號碼:<span class="sig-line"></span><br><br>
-      中　華　民　國　115　年　　月　　日
-    </div>
-  </div>
-  `;
-}
-
-el('printBtn').addEventListener('click', ()=> window.print());
 
 /* ==================================================================
    TAB 2: QR code — builds a Google Form "pre-filled link" that locks
@@ -1333,6 +807,18 @@ function findCsvKey(row, candidates){
   }
   return null;
 }
+
+/* 報到試算表的 CSV 網址是全系統共用一份（報到表單只有一份），寫死成預設值，
+   一般使用者不需要知道也不用填；欄位收在「即時報到名單」的「進階」裡，真的要換才去改。 */
+try{
+  const DEFAULT_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS7PU7hFt41SnKJGg3MU9PL8JGhgi1szdP7j5ii4JdxuYXbtVC2sptieMEKZjYcTeJ-lmlhBZX4vheq/pub?gid=444697738&single=true&output=csv';
+  const savedCsvUrl = localStorage.getItem('rosterCsvUrl');
+  el('csvUrlInput').value = savedCsvUrl || DEFAULT_CSV_URL;
+  if(!savedCsvUrl){ try{ localStorage.setItem('rosterCsvUrl', DEFAULT_CSV_URL); }catch(e){} }
+}catch(e){ /* localStorage unavailable, ignore */ }
+el('csvUrlInput').addEventListener('change', ()=>{
+  try{ localStorage.setItem('rosterCsvUrl', el('csvUrlInput').value.trim()); }catch(e){}
+});
 
 el('fetchRosterBtn').addEventListener('click', ()=>{
   const csvUrl = el('csvUrlInput').value.trim();
@@ -1465,7 +951,7 @@ function cnNum(i){ return ['一','二','三','四','五'][i-1] || i; }
 
 function renderScoreTable(){
   if(!scoreCandidates.length){
-    el('scoreTableWrap').innerHTML = '<div style="font-family:system-ui,sans-serif;color:var(--muted);font-size:13px;">尚無考生資料，請從③分頁匯入報到名單，或按上方「手動新增一列考生」自行測試格式。</div>';
+    el('scoreTableWrap').innerHTML = '<div style="font-family:system-ui,sans-serif;color:var(--muted);font-size:13px;">尚無考生資料，請從「即時報到名單」匯入，或按上方「手動新增一列考生」自行測試格式。</div>';
     return;
   }
   const byCat = {};
@@ -1473,7 +959,7 @@ function renderScoreTable(){
 
   let html = '';
   Object.entries(byCat).forEach(([cat, list])=>{
-    html += `<h3 style="font-size:14.5px;margin:18px 0 4px;">${escapeHtml(cat||'未分類')}甄選人員成績表</h3>`;
+    html += `<h3 style="font-size:14.5px;margin:18px 0 4px;">${escapeHtml(data.announcement_title||'')}（${escapeHtml(cat||'未分類')}）人員成績表</h3>`;
     html += '<table class="score-table"><tr>' +
       '<th rowspan="2">項目</th><th rowspan="2">姓名</th><th rowspan="2">准考證<br>號碼</th>' +
       `<th colspan="${judgeCount+1}">試教</th><th colspan="${judgeCount+1}">口試</th>` +
@@ -1540,28 +1026,25 @@ function updateRowAverages(changedInput){
 el('printScoreBtn').addEventListener('click', ()=> window.print());
 
 /* ==================================================================
-   TAB 1 extra: "產生" = print + log to a record Google Form + mailto reminder
+   TAB 1 extra: "產生" = log to a record Google Form + auto-generate QR
    ================================================================== */
 try{
   const DEFAULT_RECORD_TEMPLATE = 'https://docs.google.com/forms/d/e/1FAIpQLSejyOTrnNWrRPKYb4gr2HuGdu8czABrnXo3GAviASz8n2VXUw/viewform?usp=pp_url&entry.1142626752=ANNO_NO&entry.234038171=SCHOOL&entry.1954700547=NOTIFY_EMAILS&entry.130771331=FULLDATA';
   const savedRecordTemplate = localStorage.getItem('recordFormTemplate');
-  const savedReminderEmail = localStorage.getItem('reminderEmail');
   el('recordTemplateInput').value = savedRecordTemplate || DEFAULT_RECORD_TEMPLATE;
   if(!savedRecordTemplate){ try{ localStorage.setItem('recordFormTemplate', DEFAULT_RECORD_TEMPLATE); }catch(e){} }
-  if(savedReminderEmail) el('reminderEmailInput').value = savedReminderEmail;
 }catch(e){ /* localStorage unavailable, ignore */ }
 
 function saveSetupSettings(){
   try{
     localStorage.setItem('recordFormTemplate', el('recordTemplateInput').value.trim());
-    localStorage.setItem('reminderEmail', el('reminderEmailInput').value.trim());
     const hint = el('setupSavedHint');
     hint.textContent = '已儲存（瀏覽器會記住，下次不用重填）';
     setTimeout(()=>{ hint.textContent=''; }, 2500);
   }catch(e){}
 }
 el('recordTemplateInput').addEventListener('change', saveSetupSettings);
-el('reminderEmailInput').addEventListener('change', saveSetupSettings);
+
 
 // Parse a "pre-filled link" template that used placeholder tokens (ANNO_NO / SCHOOL / FULLDATA)
 // to figure out which entry.xxx id belongs to which field.
@@ -1581,10 +1064,22 @@ function submitToRecordForm(){
     const mapping = parseTokenMapping(template);
     const actionUrl = template.replace(/\/viewform.*$/, '/formResponse');
     const body = new URLSearchParams();
+
+    // 順便把這場甄選的報到網址（QR code 對應的網址）一起存進 FULLDATA，
+    // 這樣「甄選紀錄」表單被送出時，Apps Script 就能直接拿到網址去產生 QR 圖寄信通知，
+    // 不用再另外新增一個 Google 表單欄位。
+    let checkinUrl = '';
+    const checkinTemplate = (el('formTemplateInput').value || '').trim();
+    if(checkinTemplate && data.activity_code){
+      try{ checkinUrl = buildPrefilledUrl(checkinTemplate, data.activity_code); }
+      catch(e){ /* 範本無效就留空，Apps Script那邊寄信時會提示還沒設定 */ }
+    }
+    const fullDataPayload = Object.assign({}, data, { checkin_url: checkinUrl });
+
     if(mapping['ANNO_NO'])  body.set(mapping['ANNO_NO'], data.activity_code || '');
-    if(mapping['SCHOOL'])   body.set(mapping['SCHOOL'], data.school_name || data.school_short || '');
+    if(mapping['SCHOOL'])   body.set(mapping['SCHOOL'], data.announcement_title || '');
     if(mapping['NOTIFY_EMAILS']) body.set(mapping['NOTIFY_EMAILS'], data.notify_emails || '');
-    if(mapping['FULLDATA']) body.set(mapping['FULLDATA'], JSON.stringify(data));
+    if(mapping['FULLDATA']) body.set(mapping['FULLDATA'], JSON.stringify(fullDataPayload));
     if([...body.keys()].length === 0){
       console.warn('紀錄表單範本裡沒找到 ANNO_NO / SCHOOL / NOTIFY_EMAILS / FULLDATA 標記，略過送出');
       return;
@@ -1600,34 +1095,69 @@ function submitToRecordForm(){
   }
 }
 
-function openReminderMail(){
-  const to = (el('reminderEmailInput').value || '').trim();
-  if(!to || !data) return;
-  const subject = `【簡章紀錄】${data.school_short || data.school_name || ''} ${data.announcement_no || ''}`;
-  const lines = [
-    `學校：${data.school_name || ''}`,
-    `簡章編號：${data.announcement_no || ''}`,
-    `職缺類型：${data.position_type || ''}`,
-    `報考組別：${(data.categories||[]).join('、')}`,
-    `名額：${data.quota || ''}`,
-    `聘任期限：${data.employment_period || ''}`,
-    `報名時間：${data.registration_date || ''}`,
-    `報名地點：${data.registration_location || ''}`,
-    `聯絡方式：${data.contact || ''}`,
-    `甄試時間：${data.exam_date || ''}`,
-    `甄試地點：${data.exam_location || ''}`,
-    `最低錄取分數：${data.min_passing_score || ''}`
-  ];
-  const mailUrl = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(lines.join('\n'))}`;
-  window.open(mailUrl, '_blank');
+function setProduceStatus(msg, cls){
+  const box = el('produceStatus');
+  box.className = 'status ' + (cls||'');
+  box.innerHTML = msg || '';
 }
 
 el('produceBtn').addEventListener('click', ()=>{
-  if(!data){ alert('請先在①上傳並解析簡章'); return; }
+  if(!data) return;
+
   submitToRecordForm();
-  openReminderMail();
-  window.print();
+
+  // 同步附加工具分頁的活動代碼欄位
+  el('qrAnnouncementNo').value = data.activity_code;
+  el('filterAnnouncementNo').value = data.activity_code;
+
+  const template = (el('formTemplateInput').value || '').trim();
+  if(!template){
+    setProduceStatus('已送出甄選紀錄，但尚未設定「報到表單預填連結範本」（在「報到 QR code」附加工具裡設定一次即可），暫時無法自動產生 QR。', 'err');
+    return;
+  }
+
+  let finalUrl;
+  try{
+    finalUrl = buildPrefilledUrl(template, data.activity_code);
+  }catch(e){
+    setProduceStatus('已送出甄選紀錄，但產生 QR 失敗：'+e.message, 'err');
+    return;
+  }
+
+  el('produceQrBox').innerHTML = '';
+  new QRCode(el('produceQrBox'), {
+    text: finalUrl, width: 200, height: 200,
+    colorDark: '#1c2b3a', colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.M
+  });
+  el('produceDownloadQrBtn').style.display = 'inline-block';
+
+  setProduceStatus(
+    '已送出這場甄選的紀錄，Apps Script 會自動寄一封含這場甄選資訊＋QR code 圖片的信到'
+    + (data.notify_emails ? '「'+escapeHtml(data.notify_emails)+'」' : '通知信箱（目前還沒填，請補填後重新按一次）')
+    + (data.notify_emails ? '，考生報到後也會再收到成績表通知' : '')
+    + '。QR code 已就地產生，可直接列印或下載給考生現場掃描。',
+    'ok'
+  );
 });
+el('produceDownloadQrBtn').addEventListener('click', ()=>{
+  const box = el('produceQrBox');
+  const img = box.querySelector('img');
+  const canvas = box.querySelector('canvas');
+  const src = (img && img.src) ? img.src : (canvas ? canvas.toDataURL() : null);
+  if(!src) return;
+  const link = document.createElement('a');
+  link.download = 'checkin-qrcode.png';
+  link.href = src;
+  link.click();
+});
+
+/* ==================================================================
+   頁面載入初始化：主頁直接顯示一筆空白資料可供填寫，不需要任何上傳/解析步驟
+   ================================================================== */
+fillFieldsFromData();
+el('qrAnnouncementNo').value = data.activity_code;
+el('filterAnnouncementNo').value = data.activity_code;
 </script>
 </body>
 </html>
