@@ -725,7 +725,9 @@ el('formTemplateInput').addEventListener('input', ()=>{
   try{ localStorage.setItem('formTemplateUrl', el('formTemplateInput').value.trim()); }catch(e){}
 });
 
-document.querySelector('[data-tab="tab2"]').addEventListener('click', ()=>{
+/* tab2 按鈕已從導覽列移除（2026/7/11 精簡版面），?. 保護：按鈕不存在就跳過。
+   若日後把按鈕加回導覽列，這段同步邏輯會自動恢復作用。 */
+document.querySelector('[data-tab="tab2"]')?.addEventListener('click', ()=>{
   if(data && data.activity_code){
     el('qrAnnouncementNo').value = data.activity_code;
   }
@@ -787,7 +789,8 @@ el('downloadQrBtn').addEventListener('click', ()=>{
    ================================================================== */
 let rosterData = []; // {timestamp, name, id4, category, examNo}
 
-document.querySelector('[data-tab="tab3"]').addEventListener('click', ()=>{
+/* tab3 按鈕已從導覽列移除，同上用 ?. 保護 */
+document.querySelector('[data-tab="tab3"]')?.addEventListener('click', ()=>{
   if(data && data.activity_code){
     el('filterAnnouncementNo').value = data.activity_code;
   }
