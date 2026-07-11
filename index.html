@@ -1241,8 +1241,10 @@ el('printBtn').addEventListener('click', ()=> window.print());
 // Remember the one-time template across visits (this is a real standalone
 // site now, not a Claude.ai artifact, so localStorage is fine here).
 try{
+  const DEFAULT_FORM_TEMPLATE = 'https://docs.google.com/forms/d/e/1FAIpQLScgHaMngiho8qpcJ9dpWY7TlzI5ib5-wYDPSpc7WxKoj7wHTg/viewform?usp=pp_url&entry.2037675635=TEMP';
   const savedTemplate = localStorage.getItem('formTemplateUrl');
-  if(savedTemplate) el('formTemplateInput').value = savedTemplate;
+  el('formTemplateInput').value = savedTemplate || DEFAULT_FORM_TEMPLATE;
+  if(!savedTemplate){ try{ localStorage.setItem('formTemplateUrl', DEFAULT_FORM_TEMPLATE); }catch(e){} }
 }catch(e){ /* localStorage unavailable, ignore */ }
 
 el('formTemplateInput').addEventListener('input', ()=>{
@@ -1541,9 +1543,11 @@ el('printScoreBtn').addEventListener('click', ()=> window.print());
    TAB 1 extra: "產生" = print + log to a record Google Form + mailto reminder
    ================================================================== */
 try{
+  const DEFAULT_RECORD_TEMPLATE = 'https://docs.google.com/forms/d/e/1FAIpQLSejyOTrnNWrRPKYb4gr2HuGdu8czABrnXo3GAviASz8n2VXUw/viewform?usp=pp_url&entry.1142626752=ANNO_NO&entry.234038171=SCHOOL&entry.1954700547=NOTIFY_EMAILS&entry.130771331=FULLDATA';
   const savedRecordTemplate = localStorage.getItem('recordFormTemplate');
   const savedReminderEmail = localStorage.getItem('reminderEmail');
-  if(savedRecordTemplate) el('recordTemplateInput').value = savedRecordTemplate;
+  el('recordTemplateInput').value = savedRecordTemplate || DEFAULT_RECORD_TEMPLATE;
+  if(!savedRecordTemplate){ try{ localStorage.setItem('recordFormTemplate', DEFAULT_RECORD_TEMPLATE); }catch(e){} }
   if(savedReminderEmail) el('reminderEmailInput').value = savedReminderEmail;
 }catch(e){ /* localStorage unavailable, ignore */ }
 
