@@ -453,7 +453,7 @@
         </div>
 
         <div class="field-row">
-          <label>通知信箱（承辦人，報到後自動寄信通知，可多人以逗號分隔）</label>
+          <label>通知信箱（承辦人，報到後自動寄信通知；可多人，用逗號、頓號或空格分隔，全形半形皆可）</label>
           <input id="f_notify_emails" placeholder="例如 a@school.edu.tw, b@school.edu.tw">
         </div>
 
@@ -1120,7 +1120,7 @@ function setProduceStatus(msg, cls){
 
 /* 檢查通知信箱格式：可多個（逗號/分號分隔），每一個都要像正常 email */
 function invalidEmails(raw){
-  return (raw||'').split(/[,，;；\s]+/).map(s=>s.trim()).filter(Boolean)
+  return (raw||'').split(/[,，、;；\s]+/).map(s=>s.trim()).filter(Boolean)
     .filter(e => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e));
 }
 
