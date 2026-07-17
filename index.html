@@ -445,6 +445,14 @@
         </div>
 
         <div class="field-row">
+          <label>評審人數（影響「評分總表」每位考生的評分列數）</label>
+          <div style="display:flex;gap:16px;font-family:system-ui,sans-serif;font-size:13.5px;">
+            <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="radio" name="judgeN" value="2">2 位</label>
+            <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="radio" name="judgeN" value="3" checked>3 位</label>
+          </div>
+        </div>
+
+        <div class="field-row">
           <label>通知信箱（承辦人，報到後自動寄信通知，可多人以逗號分隔）</label>
           <input id="f_notify_emails" placeholder="例如 a@school.edu.tw, b@school.edu.tw">
         </div>
@@ -628,6 +636,7 @@ function normalize(p){
     announcement_title: p.announcement_title || "",
     announcement_no: p.announcement_no || "",
     position_type: p.position_type || "",
+    judge_count: p.judge_count || "3",
     // 這組代碼才是 QR code／即時名單／通知信查找真正比對用的 key；簡章編號只給人看。
     activity_code: makeActivityCode(p.announcement_title, p.announcement_no, p.position_type),
     notify_emails: p.notify_emails || ""
@@ -688,6 +697,11 @@ el('f_position_type_other').addEventListener('input', ()=>{
     data.position_type = el('f_position_type_other').value || '';
     refreshActivityCode();
   }
+});
+
+/* 評審人數（2或3），寫進 data 讓 FULLDATA 帶給 Apps Script 決定評分總表的列數 */
+document.querySelectorAll('input[name="judgeN"]').forEach(radio=>{
+  radio.addEventListener('change', ()=>{ data.judge_count = radio.value; });
 });
 
 Object.keys(simpleFieldIds).forEach(domId=>{
