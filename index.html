@@ -445,6 +445,11 @@
         </div>
 
         <div class="field-row">
+          <label>甄選日期時間（會顯示在評分總表上）</label>
+          <input id="f_exam_datetime" placeholder="例如：115年7月17日上午10時00分起">
+        </div>
+
+        <div class="field-row">
           <label>評審人數（影響「評分總表」每位考生的評分列數）</label>
           <div style="display:flex;gap:16px;font-family:system-ui,sans-serif;font-size:13.5px;">
             <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="radio" name="judgeN" value="2">2 位</label>
@@ -637,6 +642,7 @@ function normalize(p){
     announcement_no: p.announcement_no || "",
     position_type: p.position_type || "",
     judge_count: p.judge_count || "3",
+    exam_datetime: p.exam_datetime || "",
     // 這組代碼才是 QR code／即時名單／通知信查找真正比對用的 key；簡章編號只給人看。
     activity_code: makeActivityCode(p.announcement_title, p.announcement_no, p.position_type),
     notify_emails: p.notify_emails || ""
@@ -648,7 +654,7 @@ data = normalize({});
 
 /* ---------------- left panel <-> data binding ---------------- */
 const simpleFieldIds = {
-  f_announcement_title:'announcement_title',
+  f_announcement_title:'announcement_title', f_exam_datetime:'exam_datetime',
   f_announcement_no:'announcement_no', f_activity_code:'activity_code', f_notify_emails:'notify_emails'
 };
 
