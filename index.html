@@ -446,7 +446,11 @@
 
         <div class="field-row">
           <label>甄選日期時間（會顯示在評分總表上）</label>
-          <input id="f_exam_datetime" placeholder="例如：115年7月17日上午10時00分起">
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <input type="date" id="f_exam_date" style="flex:1;min-width:150px;">
+            <input type="time" id="f_exam_time" style="flex:1;min-width:120px;">
+            <span id="examDatetimePreview" style="font-family:system-ui,sans-serif;font-size:12.5px;color:var(--muted);flex-basis:100%;"></span>
+          </div>
         </div>
 
         <div class="field-row">
@@ -654,9 +658,36 @@ data = normalize({});
 
 /* ---------------- left panel <-> data binding ---------------- */
 const simpleFieldIds = {
-  f_announcement_title:'announcement_title', f_exam_datetime:'exam_datetime',
+  f_announcement_title:'announcement_title',
   f_announcement_no:'announcement_no', f_activity_code:'activity_code', f_notify_emails:'notify_emails'
 };
+
+/* 甄選日期時間：由日期＋時間選擇器組合成民國格式字串（例：115年7月17日上午10時00分起），
+   存進 data.exam_datetime 讓評分總表顯示 */
+function composeExamDatetime(){
+  const d = el('f_exam_date').value;   // 例 2026-07-17
+  const t = el('f_exam_time').value;   // 例 10:00
+  let s = '';
+  if(d){
+    const [y, m, day] = d.split('-').map(Number);
+    s += `${y - 1911}年${m}月${day}日`;
+  }
+  if(t){
+    let [h, min] = t.split(':').map(Number);
+    let period;
+    if(h === 0){ period = '上午'; h = 12; }
+    else if(h < 12){ period = '上午'; }
+    else if(h === 12){ period = '下午'; }
+    else { period = '下午'; h -= 12; }
+    s += `${period}${h}時${String(min).padStart(2,'0')}分`;
+  }
+  if(s) s += '起';
+  data.exam_datetime = s;
+  el('examDatetimePreview').textContent = s ? ('將顯示為：甄選日期：' + s) : '';
+}
+['f_exam_date','f_exam_time'].forEach(id=>{
+  document.addEventListener('change', e=>{ if(e.target.id === id) composeExamDatetime(); });
+});
 
 function fillFieldsFromData(){
   Object.entries(simpleFieldIds).forEach(([domId,key])=>{
