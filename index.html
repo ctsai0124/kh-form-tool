@@ -2,372 +2,553 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>甄選報到系統</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
+
   :root{
-    --ink:#1c2b3a;
-    --paper:#fdfcf9;
-    --line:#d8d2c4;
-    --accent:#8a3b2b;
-    --accent-soft:#f3e6df;
-    --muted:#6b7280;
-    --panel:#ffffff;
-    --ok:#2e6b4f;
-    --warn:#b3541e;
+    --primary: #1e3a8a; /* 經典深藍 */
+    --primary-light: #eff6ff;
+    --primary-hover: #1d4ed8;
+    --accent: #8a3b2b; /* 保持原有的典雅磚紅 */
+    --accent-soft: #fdf2f0;
+    --ink: #1f2937;
+    --paper: #f8fafc; /* 極簡淺灰藍背景 */
+    --line: #e2e8f0;
+    --muted: #64748b;
+    --panel: #ffffff;
+    --ok: #10b981;
+    --warn: #f97316;
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+    --radius: 12px;
   }
-  *{box-sizing:border-box;}
+
+  *{
+    box-sizing: border-box;
+    transition: all 0.2s ease-in-out;
+  }
+
   body{
-    margin:0;
-    background:var(--paper);
-    color:var(--ink);
-    font-family:"Noto Serif TC","PMingLiU","Songti TC",serif;
-    line-height:1.55;
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Noto Sans TC", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
   }
+
   .app{
-    max-width:1400px;
-    margin:0 auto;
-    padding:28px 24px 80px;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 24px 100px;
   }
+
+  /* --- Header --- */
   header.top{
-    display:flex;
-    align-items:baseline;
-    justify-content:space-between;
-    border-bottom:3px double var(--ink);
-    padding-bottom:14px;
-    margin-bottom:22px;
-    flex-wrap:wrap;
-    gap:10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 24px;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+    gap: 16px;
   }
   header.top h1{
-    font-size:22px;
-    letter-spacing:.06em;
-    margin:0;
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: .02em;
+    margin: 0;
+    color: var(--primary);
+    position: relative;
+    padding-left: 16px;
+  }
+  header.top h1::before{
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 15%;
+    height: 70%;
+    width: 6px;
+    background: var(--accent);
+    border-radius: 4px;
   }
   header.top .sub{
-    font-size:13px;
-    color:var(--muted);
-    font-family:system-ui,sans-serif;
+    font-size: 14px;
+    color: var(--muted);
+    font-weight: 400;
   }
 
   .layout{
-    display:grid;
+    display: grid;
     grid-template-columns: 380px 1fr;
-    gap:24px;
-    align-items:start;
+    gap: 32px;
+    align-items: start;
   }
   @media (max-width: 980px){
     .layout{grid-template-columns:1fr;}
   }
 
+  /* --- Panel --- */
   .panel{
-    background:var(--panel);
-    border:1px solid var(--line);
-    border-radius:4px;
-    padding:18px 18px 20px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 28px;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 24px;
+  }
+  .panel:hover{
+    box-shadow: var(--shadow-md);
   }
   .panel h2{
-    font-size:15px;
-    margin:0 0 12px;
-    padding-bottom:8px;
-    border-bottom:1px solid var(--line);
-    letter-spacing:.04em;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--primary);
+    margin: 0 0 20px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--primary-light);
+    letter-spacing: .02em;
   }
 
   .filepill{
-    display:flex;
-    align-items:center;
-    gap:8px;
-    font-family:system-ui,sans-serif;
-    font-size:13px;
-    background:var(--accent-soft);
-    border:1px solid var(--accent);
-    border-radius:20px;
-    padding:6px 12px;
-    margin-top:10px;
-    color:var(--accent);
-    word-break:break-all;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    background: var(--accent-soft);
+    border: 1px solid rgba(138, 59, 43, 0.2);
+    border-radius: 30px;
+    padding: 8px 16px;
+    margin-top: 12px;
+    color: var(--accent);
+    word-break: break-all;
   }
 
+  /* --- Buttons --- */
+  button{
+    font-family: inherit;
+    font-weight: 500;
+    border-radius: 8px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
   button.primary{
-    width:100%;
-    margin-top:14px;
-    background:var(--accent);
-    color:#fff;
-    border:none;
-    padding:11px;
-    border-radius:4px;
-    font-family:system-ui,sans-serif;
-    font-size:14.5px;
-    letter-spacing:.03em;
-    cursor:pointer;
+    width: 100%;
+    margin-top: 16px;
+    background: linear-gradient(135deg, var(--primary) 0%, #1d4ed8 100%);
+    color: #fff;
+    border: none;
+    padding: 14px 24px;
+    font-size: 16px;
+    letter-spacing: .02em;
+    box-shadow: 0 4px 10px rgba(30, 58, 138, 0.25);
+  }
+  button.primary:hover:not(:disabled){
+    transform: translateY(-2px);
+    box-shadow: 0 6px 14px rgba(30, 58, 138, 0.35);
+  }
+  button.primary:active:not(:disabled){
+    transform: translateY(0);
   }
   button.primary:disabled{
-    background:#c9c2b6;
-    cursor:not-allowed;
+    background: #cbd5e1;
+    color: #94a3b8;
+    box-shadow: none;
+    cursor: not-allowed;
   }
   button.secondary{
-    background:none;
-    border:1px solid var(--line);
-    color:var(--ink);
-    padding:8px 12px;
-    border-radius:4px;
-    font-family:system-ui,sans-serif;
-    font-size:13px;
-    cursor:pointer;
+    background: #fff;
+    border: 1px solid var(--line);
+    color: var(--ink);
+    padding: 10px 18px;
+    font-size: 14px;
+    box-shadow: var(--shadow-sm);
+  }
+  button.secondary:hover{
+    border-color: var(--primary);
+    color: var(--primary);
+    background: var(--primary-light);
   }
 
   .status{
-    margin-top:12px;
-    font-family:system-ui,sans-serif;
-    font-size:12.5px;
-    color:var(--muted);
-    display:flex;
-    align-items:center;
-    gap:8px;
+    margin-top: 16px;
+    font-size: 14px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    background: #f8fafc;
   }
-  .status.err{color:#b3261e;}
-  .status.ok{color:var(--ok);}
+  .status.err{
+    color: #b91c1c;
+    background: #fef2f2;
+    border: 1px solid #fca5a5;
+  }
+  .status.ok{
+    color: var(--ok);
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+  }
 
   .spinner{
-    width:13px;height:13px;
-    border:2px solid var(--line);
-    border-top-color:var(--accent);
-    border-radius:50%;
-    animation:spin .7s linear infinite;
-    flex:0 0 auto;
+    width: 18px; height: 18px;
+    border: 3px solid #e2e8f0;
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+    flex: 0 0 auto;
   }
-  @keyframes spin{to{transform:rotate(360deg);}}
+  @keyframes spin{ to{transform:rotate(360deg);} }
 
-  /* --- field editor --- */
+  /* --- Field Editor --- */
   .field-row{
-    margin-bottom:11px;
+    margin-bottom: 20px;
   }
   .field-row label{
-    display:block;
-    font-family:system-ui,sans-serif;
-    font-size:11.5px;
-    color:var(--muted);
-    margin-bottom:3px;
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ink);
+    margin-bottom: 8px;
   }
   .field-row input, .field-row textarea{
-    width:100%;
-    font-family:"Noto Serif TC",serif;
-    font-size:13.5px;
-    padding:6px 8px;
-    border:1px solid var(--line);
-    border-radius:3px;
-    background:#fffefb;
-    color:var(--ink);
+    width: 100%;
+    font-family: inherit;
+    font-size: 14.5px;
+    padding: 11px 14px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--ink);
+    box-shadow: var(--shadow-sm);
   }
-  .field-row textarea{resize:vertical;min-height:44px;}
+  .field-row input:focus, .field-row textarea:focus{
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(30, 58, 138, 0.15);
+  }
+  .field-row textarea{ resize: vertical; min-height: 50px; }
+
+  /* --- 職缺類型卡片樣式 --- */
+  .choice-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .choice-chips label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 400;
+    user-select: none;
+  }
+  .choice-chips input[type="radio"] {
+    display: none; /* 隱藏傳統圓點 */
+  }
+  .choice-chips label:has(input[type="radio"]:checked) {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+    font-weight: 500;
+    box-shadow: 0 4px 6px rgba(30, 58, 138, 0.2);
+  }
+  .choice-chips label:hover:not(:has(input[type="radio"]:checked)) {
+    background: #e2e8f0;
+  }
 
   .divider{
-    border:none;border-top:1px solid var(--line);margin:16px 0;
+    border: none; border-top: 1px solid var(--line); margin: 24px 0;
   }
 
   /* --- 使用流程指引 --- */
   .flow-guide{
-    display:flex;
-    align-items:stretch;
-    justify-content:space-between;
-    gap:4px;
-    flex-wrap:wrap;
+    display: flex;
+    align-items: stretch;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
   }
   .flow-step{
-    flex:1;
-    min-width:120px;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    text-align:center;
-    gap:6px;
+    flex: 1;
+    min-width: 130px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 10px;
+    padding: 12px 8px;
+    border-radius: 8px;
   }
   .flow-num{
-    width:26px;height:26px;
-    border-radius:50%;
-    background:var(--accent);
-    color:#fff;
-    font-family:system-ui,sans-serif;
-    font-size:13px;font-weight:700;
-    display:flex;align-items:center;justify-content:center;
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent) 0%, #a24b3a 100%);
+    color: #fff;
+    font-size: 14px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 6px rgba(138, 59, 43, 0.2);
   }
   .flow-text{
-    font-family:system-ui,sans-serif;
-    font-size:11.5px;
-    line-height:1.55;
-    color:var(--muted);
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--muted);
   }
-  .flow-text b{color:var(--ink);font-size:12.5px;}
+  .flow-text b{ color: var(--ink); font-size: 14px; display: block; margin-bottom: 2px;}
   .flow-arrow{
-    align-self:center;
-    color:var(--accent);
-    font-size:16px;
-    font-family:system-ui,sans-serif;
-    padding:0 2px;
+    align-self: center;
+    color: var(--accent);
+    font-size: 20px;
+    font-weight: bold;
+    padding: 0 4px;
+    opacity: 0.6;
   }
-  @media (max-width:560px){
+  @media (max-width:768px){
     .flow-arrow{display:none;}
-    .flow-step{min-width:46%;}
+    .flow-step{min-width: 45%; background: #f8fafc;}
   }
 
   details.rawjson summary{
-    font-family:system-ui,sans-serif;font-size:11.5px;color:var(--muted);cursor:pointer;
+    font-size: 13px; color: var(--muted); cursor: pointer; font-weight: 500;
   }
   details.rawjson pre{
-    font-size:10.5px;background:#f7f5f0;padding:8px;border-radius:4px;
-    max-height:220px;overflow:auto;white-space:pre-wrap;word-break:break-all;
+    font-size: 11px; background: #f8fafc; padding: 12px; border-radius: 8px;
+    max-height: 220px; overflow: auto; white-space: pre-wrap; word-break: break-all;
+    border: 1px solid var(--line);
   }
 
-  @media print{
-    header.top, .layout > .panel:first-child, details.rawjson{display:none !important;}
-    .layout{display:block;}
-    body{background:#fff;}
-    .app{padding:0;max-width:none;}
-    .tabnav{display:none !important;}
-    .section-block .desc, .inline-field, #printScoreBtn, #addManualRowBtn,
-    #genQrBtn, #downloadQrBtn, #fetchRosterBtn, #toScoreBtn,
-    #produceBtn, #produceQrBox, #produceDownloadQrBtn, #printPosterBtn, details.rawjson, footer{display:none !important;}
-  }
-
-  /* --- tab navigation --- */
+  /* --- Tab Navigation --- */
   .tabnav{
-    display:flex;
-    gap:6px;
-    margin-bottom:20px;
-    border-bottom:1px solid var(--line);
-    flex-wrap:wrap;
+    display: flex;
+    gap: 8px;
+    margin-bottom: 28px;
+    border-bottom: 2px solid var(--line);
+    flex-wrap: wrap;
   }
   .tabnav button{
-    font-family:system-ui,sans-serif;
-    font-size:13.5px;
-    background:none;
-    border:none;
-    padding:10px 16px;
-    cursor:pointer;
-    color:var(--muted);
-    border-bottom:2px solid transparent;
-    margin-bottom:-1px;
+    font-size: 15px;
+    background: none;
+    border: none;
+    padding: 12px 20px;
+    cursor: pointer;
+    color: var(--muted);
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    font-weight: 500;
+    border-radius: 0;
+  }
+  .tabnav button:hover{
+    color: var(--primary);
   }
   .tabnav button.active{
-    color:var(--accent);
-    border-bottom-color:var(--accent);
-    font-weight:600;
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+    font-weight: 700;
   }
   .tabnav button.tab-btn-extra{
-    font-size:12px;
-    padding:10px 10px;
+    font-size: 13px;
+    padding: 12px 14px;
+    opacity: 0.8;
   }
   .tabpanel{display:none;}
   .tabpanel.active{display:block;}
 
+  /* --- Section Blocks --- */
   .section-block{
-    background:var(--panel);
-    border:1px solid var(--line);
-    border-radius:4px;
-    padding:20px 22px;
-    margin-bottom:18px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 28px;
+    margin-bottom: 24px;
+    box-shadow: var(--shadow-sm);
   }
   .section-block h2{
-    font-size:15.5px;
-    margin:0 0 6px;
+    font-size: 18px;
+    color: var(--primary);
+    margin: 0 0 8px;
+    font-weight: 700;
   }
   .section-block .desc{
-    font-family:system-ui,sans-serif;
-    font-size:12.5px;
-    color:var(--muted);
-    margin-bottom:14px;
-    line-height:1.7;
+    font-size: 14px;
+    color: var(--muted);
+    margin-bottom: 20px;
+    line-height: 1.7;
   }
   .inline-field{
-    display:flex;
-    align-items:center;
-    gap:10px;
-    margin-bottom:12px;
-    flex-wrap:wrap;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
   }
   .inline-field label{
-    font-family:system-ui,sans-serif;
-    font-size:12.5px;
-    color:var(--muted);
-    min-width:150px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ink);
+    min-width: 150px;
   }
   .inline-field input, .inline-field select{
-    flex:1;
-    min-width:220px;
-    font-family:system-ui,sans-serif;
-    font-size:13px;
-    padding:7px 9px;
-    border:1px solid var(--line);
-    border-radius:3px;
+    flex: 1;
+    min-width: 240px;
+    font-size: 14px;
+    padding: 9px 12px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: #fff;
   }
+  .inline-field input:focus, .inline-field select:focus{
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.15);
+  }
+
   #qrCodeBox{
-    display:flex;
-    justify-content:center;
-    padding:20px;
-    background:#fff;
+    display: flex;
+    justify-content: center;
+    padding: 24px;
+    background: #fff;
+    border-radius: 8px;
+    border: 1px dashed var(--line);
+    margin: 20px 0;
   }
-  .roster-table{
-    width:100%;
-    border-collapse:collapse;
-    font-size:13px;
-    margin-top:8px;
+
+  /* --- Tables (Roster & Scores) --- */
+  .roster-table, table.score-table{
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 14px;
+    margin-top: 12px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow-sm);
   }
-  .roster-table th, .roster-table td{
-    border:1px solid var(--line);
-    padding:6px 8px;
-    text-align:left;
+  .roster-table th, .roster-table td, table.score-table th, table.score-table td{
+    border-right: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    padding: 12px 16px;
+    text-align: left;
   }
-  .roster-table th{background:#f6f3ec;font-family:system-ui,sans-serif;font-size:12px;}
+  .roster-table th:last-child, .roster-table td:last-child,
+  table.score-table th:last-child, table.score-table td:last-child {
+    border-right: none;
+  }
+  .roster-table tr:last-child td, table.score-table tr:last-child td {
+    border-bottom: none;
+  }
+  .roster-table th, table.score-table th{
+    background: #f8fafc;
+    color: var(--primary);
+    font-weight: 600;
+    font-size: 13.5px;
+    letter-spacing: 0.02em;
+  }
   .roster-group-title{
-    font-family:system-ui,sans-serif;
-    font-size:13px;
-    font-weight:600;
-    margin:14px 0 4px;
-    color:var(--accent);
+    font-size: 15px;
+    font-weight: 700;
+    margin: 24px 0 8px;
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    gap: 6px;
   }
+  .roster-group-title::before{
+    content: '■';
+    font-size: 10px;
+    vertical-align: middle;
+  }
+
   .judge-toggle{
-    display:inline-flex;
-    border:1px solid var(--line);
-    border-radius:4px;
-    overflow:hidden;
-    font-family:system-ui,sans-serif;
-    font-size:12.5px;
+    display: inline-flex;
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    overflow: hidden;
+    background: #f1f5f9;
+    padding: 3px;
   }
   .judge-toggle button{
-    border:none;background:#fff;padding:6px 14px;cursor:pointer;color:var(--muted);
+    border: none; background: none; padding: 6px 16px; cursor: pointer; color: var(--muted);
+    border-radius: 15px; font-size: 13px;
   }
-  .judge-toggle button.active{background:var(--accent);color:#fff;}
-  table.score-table{
-    width:100%;
-    border-collapse:collapse;
-    font-size:12.5px;
-    margin-bottom:22px;
+  .judge-toggle button.active{
+    background: var(--primary); color: #fff; font-weight: 500;
+    box-shadow: var(--shadow-sm);
   }
+
   table.score-table th, table.score-table td{
-    border:1px solid var(--ink);
-    padding:5px 6px;
-    text-align:center;
+    text-align: center;
+    padding: 10px 8px;
   }
-  table.score-table th{background:#f6f3ec;font-size:11.5px;}
+  table.score-table th{
+    background: #f1f5f9;
+  }
   table.score-table input{
-    width:52px;
-    text-align:center;
-    border:1px solid var(--line);
-    border-radius:2px;
-    padding:3px;
-    font-size:12.5px;
+    width: 60px;
+    text-align: center;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 6px;
+    font-size: 14px;
+    background: #fff;
+  }
+  table.score-table input:focus{
+    outline: none; border-color: var(--primary);
   }
   table.score-table input.result-input{
-    width:80px;
+    width: 90px;
   }
   .score-table .avg-cell{
-    background:#faf7f0;
-    font-weight:600;
+    background: #f8fafc;
+    font-weight: 700;
+    color: var(--primary);
   }
+
+  /* --- Print CSS --- */
   @media print{
-    .section-block{border:none;padding:0;}
+    header.top, .layout > .panel:first-child, details.rawjson{display:none !important;}
+    .layout{display:block;}
+    body{background:#fff; color: #000;}
+    .app{padding:0; max-width:none;}
+    .tabnav{display:none !important;}
+    .section-block{border:none; padding:0; box-shadow: none;}
+    .section-block .desc, .inline-field, #printScoreBtn, #addManualRowBtn,
+    #genQrBtn, #downloadQrBtn, #fetchRosterBtn, #toScoreBtn,
+    #produceBtn, #produceQrBox, #produceDownloadQrBtn, #printPosterBtn, details.rawjson, footer{display:none !important;}
+
+    /* 確保列印時表格線條清楚且字體深色 */
+    .roster-table, table.score-table {
+      border: 2px solid #000 !important;
+      color: #000 !important;
+      box-shadow: none !important;
+    }
+    .roster-table th, .roster-table td, table.score-table th, table.score-table td {
+      border: 1px solid #000 !important;
+      color: #000 !important;
+    }
+    table.score-table input {
+      border: none !important;
+      background: transparent !important;
+      color: #000 !important;
+    }
   }
 </style>
 </head>
@@ -387,29 +568,29 @@
   </div>
 
   <div id="tab1" class="tabpanel active">
-  <div style="max-width:720px;margin:0 auto;">
+  <div style="max-width:760px;margin:0 auto;">
 
     <!-- 使用流程指引 -->
-    <div class="panel" style="padding:16px 20px;">
+    <div class="panel" style="padding:24px;">
       <div class="flow-guide">
         <div class="flow-step">
           <div class="flow-num">1</div>
-          <div class="flow-text"><b>填寫甄選資料</b><br>簡章名稱、編號、職缺、<br>日期、評審數、通知信箱</div>
+          <div class="flow-text"><b>填寫甄選資料</b>簡章名稱、編號、職缺、日期、評審、信箱</div>
         </div>
         <div class="flow-arrow">→</div>
         <div class="flow-step">
           <div class="flow-num">2</div>
-          <div class="flow-text"><b>按「產生」</b><br>QR code 就地產生，<br>並自動寄到通知信箱</div>
+          <div class="flow-text"><b>按「產生」</b>QR code 即時生成，自動寄送通知信</div>
         </div>
         <div class="flow-arrow">→</div>
         <div class="flow-step">
           <div class="flow-num">3</div>
-          <div class="flow-text"><b>列印 QR code</b><br>張貼在甄試<br>報到處</div>
+          <div class="flow-text"><b>列印 QR code</b>張貼在甄試報到處供考生掃描</div>
         </div>
         <div class="flow-arrow">→</div>
         <div class="flow-step">
           <div class="flow-num">4</div>
-          <div class="flow-text"><b>考生掃碼報到</b><br>評分總表自動寄到信箱，<br>列印最新一封即可</div>
+          <div class="flow-text"><b>考生掃碼報到</b>評分總表自動寄出，列印最新郵件即可</div>
         </div>
       </div>
     </div>
@@ -424,65 +605,65 @@
           <input id="f_announcement_title" placeholder="例如：高雄市OO區OO國小115學年度">
         </div>
 
-        <div class="field-row"><label>簡章編號（如：第2號第2次）</label><input id="f_announcement_no"></div>
+        <div class="field-row"><label>簡章編號（如：第2號第2次）</label><input id="f_announcement_no" placeholder="例如：第1號第1次"></div>
 
         <div class="field-row">
           <label>職缺類型</label>
-          <div id="positionTypeChoices" style="display:flex;flex-wrap:wrap;gap:12px 16px;font-family:system-ui,sans-serif;font-size:13.5px;margin-bottom:6px;">
-            <label style="display:flex;align-items:center;gap:5px;cursor:pointer;white-space:nowrap;"><input type="radio" name="posType" value="代理教師">代理教師</label>
-            <label style="display:flex;align-items:center;gap:5px;cursor:pointer;white-space:nowrap;"><input type="radio" name="posType" value="代課教師">代課教師</label>
-            <label style="display:flex;align-items:center;gap:5px;cursor:pointer;white-space:nowrap;"><input type="radio" name="posType" value="專輔教師">專輔教師</label>
-            <label style="display:flex;align-items:center;gap:5px;cursor:pointer;white-space:nowrap;"><input type="radio" name="posType" value="幼兒園代理教師">幼兒園代理教師</label>
-            <label style="display:flex;align-items:center;gap:5px;cursor:pointer;white-space:nowrap;"><input type="radio" name="posType" value="教保員">教保員</label>
-            <label style="display:flex;align-items:center;gap:5px;cursor:pointer;white-space:nowrap;"><input type="radio" name="posType" value="代理教保員">代理教保員</label>
-            <label style="display:flex;align-items:center;gap:5px;cursor:pointer;white-space:nowrap;"><input type="radio" name="posType" value="特教助理員">特教助理員</label>
-            <label style="display:flex;align-items:center;gap:5px;cursor:pointer;white-space:nowrap;"><input type="radio" name="posType" value="特教代理教師">特教代理教師</label>
-            <label style="display:flex;align-items:center;gap:5px;cursor:pointer;white-space:nowrap;"><input type="radio" name="posType" value="特教代課教師">特教代課教師</label>
-            <label style="display:flex;align-items:center;gap:5px;cursor:pointer;white-space:nowrap;"><input type="radio" name="posType" value="職員">職員</label>
-            <label style="display:flex;align-items:center;gap:5px;cursor:pointer;white-space:nowrap;"><input type="radio" name="posType" value="__other__">其他</label>
+          <div id="positionTypeChoices" class="choice-chips">
+            <label><input type="radio" name="posType" value="代理教師">代理教師</label>
+            <label><input type="radio" name="posType" value="代課教師">代課教師</label>
+            <label><input type="radio" name="posType" value="專輔教師">專輔教師</label>
+            <label><input type="radio" name="posType" value="幼兒園代理教師">幼兒園代理</label>
+            <label><input type="radio" name="posType" value="教保員">教保員</label>
+            <label><input type="radio" name="posType" value="代理教保員">代理教保員</label>
+            <label><input type="radio" name="posType" value="特教助理員">特教助理員</label>
+            <label><input type="radio" name="posType" value="特教代理教師">特教代理</label>
+            <label><input type="radio" name="posType" value="特教代課教師">特教代課</label>
+            <label><input type="radio" name="posType" value="職員">職員</label>
+            <label><input type="radio" name="posType" value="__other__">其他</label>
           </div>
-          <input id="f_position_type_other" placeholder="其他職缺類型，請填寫" style="display:none;">
+          <input id="f_position_type_other" placeholder="其他職缺類型，請填寫" style="display:none; margin-top:8px;">
         </div>
 
         <div class="field-row">
           <label>甄選日期時間（會顯示在評分總表上）</label>
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-            <input type="date" id="f_exam_date" style="flex:1;min-width:150px;">
+          <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+            <input type="date" id="f_exam_date" style="flex:1.2;min-width:150px;">
             <input type="time" id="f_exam_time" style="flex:1;min-width:120px;">
-            <span id="examDatetimePreview" style="font-family:system-ui,sans-serif;font-size:12.5px;color:var(--muted);flex-basis:100%;"></span>
+            <span id="examDatetimePreview" style="font-size:13px;color:var(--muted);flex-basis:100%; margin-top: 4px;"></span>
           </div>
         </div>
 
         <div class="field-row">
           <label>評審人數（影響「評分總表」每位考生的評分列數）</label>
-          <div style="display:flex;gap:16px;font-family:system-ui,sans-serif;font-size:13.5px;">
-            <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="radio" name="judgeN" value="2">2 位</label>
-            <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="radio" name="judgeN" value="3" checked>3 位</label>
+          <div class="judge-toggle" style="border-radius:8px; padding:4px;">
+            <label style="display:inline-flex; align-items:center; gap:6px; cursor:pointer; padding:6px 16px; margin:0;"><input type="radio" name="judgeN" value="2" style="margin:0;"> 2 位</label>
+            <label style="display:inline-flex; align-items:center; gap:6px; cursor:pointer; padding:6px 16px; margin:0;"><input type="radio" name="judgeN" value="3" checked style="margin:0;"> 3 位</label>
           </div>
         </div>
 
         <div class="field-row">
-          <label>通知信箱（承辦人，報到後自動寄信通知；可多人，用逗號、頓號或空格分隔，全形半形皆可）</label>
+          <label>通知信箱（承辦人，報到後自動寄信通知；可多人，用逗號、頓號或空格分隔）</label>
           <input id="f_notify_emails" placeholder="例如 a@school.edu.tw, b@school.edu.tw">
         </div>
 
         <hr class="divider">
 
-        <button class="primary" id="produceBtn" style="width:100%;padding:12px;font-size:15px;">產生報到 QR code（並寄送這場甄選資訊到信箱）</button>
-        <div class="status" id="produceStatus"></div>
-        <div id="produceQrBox" style="display:flex;justify-content:center;"></div>
-        <div style="text-align:center;display:flex;gap:8px;justify-content:center;">
+        <button class="primary" id="produceBtn">產生報到 QR code（並寄送這場甄選資訊到信箱）</button>
+        <div class="status" id="produceStatus" style="display:none;"></div>
+        <div id="produceQrBox" style="display:flex;justify-content:center; margin-top:16px;"></div>
+        <div style="text-align:center;display:flex;gap:12px;justify-content:center; margin-top:16px;">
           <button class="secondary" id="produceDownloadQrBtn" style="display:none;">下載 QR code 圖片</button>
           <button class="secondary" id="printPosterBtn" style="display:none;">列印 QR 海報（A4）</button>
         </div>
 
         <!-- 活動代碼移到最底部，避免誤觸重新產生 -->
-        <details style="margin-top:18px;">
-          <summary style="font-family:system-ui,sans-serif;font-size:12px;color:var(--muted);cursor:pointer;">進階：活動代碼（系統自動產生，一般不需要更動）</summary>
-          <div class="field-row" style="margin-top:8px;">
-            <div style="display:flex;gap:6px;">
+        <details style="margin-top:24px;">
+          <summary style="font-size:12.5px;color:var(--muted);cursor:pointer; user-select:none;">進階：活動代碼（系統自動產生，一般不需要更動）</summary>
+          <div class="field-row" style="margin-top:12px;">
+            <div style="display:flex;gap:8px;">
               <input id="f_activity_code" style="flex:1;">
-              <button type="button" id="regenCodeBtn" class="secondary" style="white-space:nowrap;">重新產生</button>
+              <button type="button" id="regenCodeBtn" class="secondary" style="white-space:nowrap; margin-top:0;">重新產生</button>
             </div>
           </div>
         </details>
@@ -517,21 +698,21 @@
         <label>表單預填連結範本</label>
         <input id="formTemplateInput" placeholder="貼上 Google 表單「取得預先填入的連結」產生的網址（只設定一次）">
       </div>
-      <button class="primary" id="genQrBtn" style="width:auto;padding:9px 20px;">產生 QR code</button>
+      <button class="primary" id="genQrBtn" style="width:auto;padding:11px 24px;">產生 QR code</button>
 
-      <div id="finalUrlBox" style="font-family:system-ui,sans-serif;font-size:11.5px;color:var(--muted);margin-top:10px;word-break:break-all;"></div>
+      <div id="finalUrlBox" style="font-size:12px;color:var(--muted);margin-top:16px;word-break:break-all;"></div>
 
       <div id="qrCodeBox"></div>
-      <div style="text-align:center;">
+      <div style="text-align:center; margin-top:12px;">
         <button class="secondary" id="downloadQrBtn" style="display:none;">下載 QR code 圖片</button>
       </div>
 
-      <details class="rawjson" style="margin-top:18px;" open>
+      <details class="rawjson" style="margin-top:24px;" open>
         <summary>還沒設定「表單預填連結範本」？點此看設定教學（整個系統只需做一次，所有學校共用這一份）</summary>
-        <div style="font-family:system-ui,sans-serif;font-size:12.5px;line-height:2;padding:10px 4px;">
+        <div style="font-size:13.5px;line-height:2;padding:14px; background: #f8fafc; border-radius: 8px; border: 1px solid var(--line); margin-top: 10px;">
           <b>第一步：建立表單（如果還沒建過）</b><br>
-          1. 到 <a href="https://forms.google.com" target="_blank">forms.google.com</a> 建立新表單，標題例如「甄選現場報到」<br>
-          2. 加入以下 4 個「簡答」欄位：① 活動代碼　② 姓名　③ 身分證後4碼　④ 報考科別<br>
+          1. 到 <a href="https://forms.google.com" target="_blank" style="color:var(--primary); font-weight:500;">forms.google.com</a> 建立新表單，標題例如「甄選現場報到」<br>
+          2. 加入以下 4 個「簡答」欄位：① 活動代碼 ② 姓名 ③ 身分證後4碼 ④ 報考科別<br>
           3. 右上角「回覆」分頁 → 點綠色 Sheets 圖示 → 建立連結的 Google 試算表<br>
           <br>
           <b>第二步：取得「預先填入的連結」範本（重點步驟）</b><br>
@@ -541,7 +722,7 @@
           <br>
           這份表單、試算表全系統只建一次，所有學校、所有場次都共用這一份，靠「活動代碼」分辨彼此，
           不會混淆。之後在「即時報到名單」附加工具，還需要把試算表「發布到網路」為 CSV，
-          才能讓本工具讀到即時資料；這份試算表也是 Apps Script 寄送通知信要監聽的對象（見 README）。
+          才能讓本工具讀到即時資料；這份試算表也是 Apps Script 寄送通知信要監聽的對象。
         </div>
       </details>
     </div>
@@ -561,21 +742,21 @@
         <label>活動代碼（篩選用）</label>
         <input id="filterAnnouncementNo" placeholder="會自動帶入「建立甄選報到」頁的活動代碼">
       </div>
-      <button class="primary" id="fetchRosterBtn" style="width:auto;padding:9px 20px;">讀取 / 重新整理報到名單</button>
+      <button class="primary" id="fetchRosterBtn" style="width:auto;padding:11px 24px;">讀取 / 重新整理報到名單</button>
 
-      <details style="margin-top:10px;">
-        <summary style="font-family:system-ui,sans-serif;font-size:11.5px;color:var(--muted);cursor:pointer;">進階：報到試算表 CSV 網址（系統已內建，一般不需要更動）</summary>
-        <div class="inline-field" style="margin-top:8px;">
+      <details style="margin-top:14px;">
+        <summary style="font-size:12.5px;color:var(--muted);cursor:pointer;">進階：報到試算表 CSV 網址（系統已內建，一般不需要更動）</summary>
+        <div class="inline-field" style="margin-top:12px;">
           <label>試算表 CSV 網址</label>
           <input id="csvUrlInput" placeholder="https://docs.google.com/spreadsheets/d/e/.../pub?output=csv">
         </div>
       </details>
 
-      <div class="status" id="rosterStatus"></div>
+      <div class="status" id="rosterStatus" style="display:none;"></div>
 
-      <div id="rosterWrap" style="margin-top:14px;"></div>
+      <div id="rosterWrap" style="margin-top:20px;"></div>
 
-      <button class="primary" id="toScoreBtn" style="display:none;margin-top:16px;">依此名單產生甄選成績表 →</button>
+      <button class="primary" id="toScoreBtn" style="display:none;margin-top:20px;">依此名單產生甄選成績表 →</button>
     </div>
   </div>
 
@@ -589,25 +770,30 @@
         委員分數與平均為即時計算，「錄取資格」欄位請人事人員自行填寫判斷。
       </div>
 
-      <div class="inline-field">
-        <label>評分委員人數</label>
-        <div class="judge-toggle" id="judgeToggle">
-          <button data-n="2">2 位委員</button>
-          <button data-n="3" class="active">3 位委員</button>
+      <div class="inline-field" style="justify-content:space-between; flex-wrap:wrap;">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <label style="min-width:auto; margin-bottom:0;">評分委員人數</label>
+          <div class="judge-toggle" id="judgeToggle">
+            <button data-n="2">2 位委員</button>
+            <button data-n="3" class="active">3 位委員</button>
+          </div>
         </div>
-        <button class="secondary" id="addManualRowBtn" style="margin-left:auto;">+ 手動新增一列考生</button>
+        <button class="secondary" id="addManualRowBtn" style="margin-top:0;">+ 手動新增一列考生</button>
       </div>
 
-      <div id="scoreTableWrap"></div>
+      <div id="scoreTableWrap" style="overflow-x:auto;"></div>
 
-      <button class="secondary" id="printScoreBtn">列印成績表</button>
+      <button class="secondary" id="printScoreBtn" style="margin-top: 16px; background:var(--primary); color:#fff; border:none; padding:12px 24px; font-size:15px;">
+        🖨️ 列印成績表
+      </button>
     </div>
   </div>
 
-  <!-- 頁尾：瀏覽人次計數器（不蒜子，免註冊；服務連不上時整段自動隱藏，不影響版面） -->
-  <footer style="text-align:center;margin:28px 0 12px;font-family:system-ui,sans-serif;font-size:11.5px;color:var(--muted);">
+  <!-- 頁尾：瀏覽人次計數器 -->
+  <footer style="text-align:center;margin:40px 0 20px;font-size:12.5px;color:var(--muted); border-top:1px dashed var(--line); padding-top:20px;">
+    <div style="margin-bottom:6px;">如有問題或相關建議，請洽 <a href="mailto:ctsai0124@gmail.com" style="color:var(--primary);font-weight:500;">ctsai0124@gmail.com</a></div>
     <span id="busuanzi_container_site_pv" style="display:none;">
-      本系統累積使用 <span id="busuanzi_value_site_pv"></span> 次
+      本系統累積使用 <span id="busuanzi_value_site_pv" style="font-weight:600; color:var(--primary);"></span> 次
     </span>
   </footer>
   <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
@@ -626,8 +812,6 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
 });
 
 /* ---------------- state ---------------- */
-// 不再有「上傳簡章→自動解析」這一步，人事人員直接在主頁手動填寫所有欄位。
-// data 一開始就是一筆空白資料，供下面的欄位輸入即時寫入。
 let data = null;
 
 const el = id => document.getElementById(id);
@@ -639,11 +823,7 @@ function escapeHtml(s){
 function slugForCode(s){
   return (s||'').replace(/[^\u4e00-\u9fa5A-Za-z0-9]/g,'').slice(0,20);
 }
-/* 活動代碼＝簡章名稱＋簡章編號＋職缺類型（去除符號），**沒有隨機碼**。
-   刻意設計成「同一場考試不管重新整理頁面、按幾次產生，代碼永遠一樣」，
-   這樣所有考生的報到紀錄才會歸在同一場、成績表才能正確累積。
-   不同學校因為簡章名稱（含校名+學年度）不同，自然不會撞號；
-   職缺類型也納入代碼，同校同編號但不同職缺（例如同時招代理跟代課）也不會混在一起。 */
+
 function makeActivityCode(title, no, position){
   return `${slugForCode(title)}_${slugForCode(no)}_${slugForCode(position)}`;
 }
@@ -655,13 +835,11 @@ function normalize(p){
     position_type: p.position_type || "",
     judge_count: p.judge_count || "3",
     exam_datetime: p.exam_datetime || "",
-    // 這組代碼才是 QR code／即時名單／通知信查找真正比對用的 key；簡章編號只給人看。
     activity_code: makeActivityCode(p.announcement_title, p.announcement_no, p.position_type),
     notify_emails: p.notify_emails || ""
   };
 }
 
-/* 頁面一載入就直接給一筆空白資料，讓主頁欄位可以馬上填寫，不需要任何上傳/解析步驟 */
 data = normalize({});
 
 /* ---------------- left panel <-> data binding ---------------- */
@@ -670,11 +848,9 @@ const simpleFieldIds = {
   f_announcement_no:'announcement_no', f_activity_code:'activity_code', f_notify_emails:'notify_emails'
 };
 
-/* 甄選日期時間：由日期＋時間選擇器組合成民國格式字串（例：115年7月17日上午10時00分起），
-   存進 data.exam_datetime 讓評分總表顯示 */
 function composeExamDatetime(){
-  const d = el('f_exam_date').value;   // 例 2026-07-17
-  const t = el('f_exam_time').value;   // 例 10:00
+  const d = el('f_exam_date').value;
+  const t = el('f_exam_time').value;
   let s = '';
   if(d){
     const [y, m, day] = d.split('-').map(Number);
@@ -716,7 +892,6 @@ function refreshActivityCode(){
   el('filterAnnouncementNo').value = data.activity_code;
 }
 
-/* 依 data.position_type 設定radio選取狀態／「其他」文字框 */
 function fillPositionTypeFromData(){
   const pos = data.position_type || '';
   const isKnown = POSITION_TYPE_OPTIONS.includes(pos);
@@ -744,7 +919,6 @@ el('f_position_type_other').addEventListener('input', ()=>{
   }
 });
 
-/* 評審人數（2或3），寫進 data 讓 FULLDATA 帶給 Apps Script 決定評分總表的列數 */
 document.querySelectorAll('input[name="judgeN"]').forEach(radio=>{
   radio.addEventListener('change', ()=>{ data.judge_count = radio.value; });
 });
@@ -753,7 +927,6 @@ Object.keys(simpleFieldIds).forEach(domId=>{
   document.addEventListener('input', e=>{
     if(e.target.id === domId){
       data[simpleFieldIds[domId]] = e.target.value;
-      // 簡章名稱或簡章編號一改，活動代碼就即時跟著更新（見 makeActivityCode 的說明）
       if(domId === 'f_announcement_title' || domId === 'f_announcement_no'){
         refreshActivityCode();
       }
@@ -767,25 +940,19 @@ el('regenCodeBtn').addEventListener('click', ()=>{
 });
 
 /* ==================================================================
-   TAB 2: QR code — builds a Google Form "pre-filled link" that locks
-   in the 簡章編號, so candidates never type it themselves.
+   TAB 2: QR code
    ================================================================== */
-
-// Remember the one-time template across visits (this is a real standalone
-// site now, not a Claude.ai artifact, so localStorage is fine here).
 try{
   const DEFAULT_FORM_TEMPLATE = 'https://docs.google.com/forms/d/e/1FAIpQLScgHaMngiho8qpcJ9dpWY7TlzI5ib5-wYDPSpc7WxKoj7wHTg/viewform?usp=pp_url&entry.2037675635=TEMP';
   const savedTemplate = localStorage.getItem('formTemplateUrl');
   el('formTemplateInput').value = savedTemplate || DEFAULT_FORM_TEMPLATE;
   if(!savedTemplate){ try{ localStorage.setItem('formTemplateUrl', DEFAULT_FORM_TEMPLATE); }catch(e){} }
-}catch(e){ /* localStorage unavailable, ignore */ }
+}catch(e){}
 
 el('formTemplateInput').addEventListener('input', ()=>{
   try{ localStorage.setItem('formTemplateUrl', el('formTemplateInput').value.trim()); }catch(e){}
 });
 
-/* tab2 按鈕已從導覽列移除（2026/7/11 精簡版面），?. 保護：按鈕不存在就跳過。
-   若日後把按鈕加回導覽列，這段同步邏輯會自動恢復作用。 */
 document.querySelector('[data-tab="tab2"]')?.addEventListener('click', ()=>{
   if(data && data.activity_code){
     el('qrAnnouncementNo').value = data.activity_code;
@@ -793,13 +960,13 @@ document.querySelector('[data-tab="tab2"]')?.addEventListener('click', ()=>{
 });
 
 function buildPrefilledUrl(templateUrl, announcementNo){
-  const url = new URL(templateUrl); // throws if invalid — caller should catch
+  const url = new URL(templateUrl);
   let replaced = false;
   for(const key of [...url.searchParams.keys()]){
     if(key.startsWith('entry.')){
       url.searchParams.set(key, announcementNo);
       replaced = true;
-      break; // template should contain exactly one entry.* — the 簡章編號 field
+      break;
     }
   }
   if(!replaced){
@@ -826,7 +993,7 @@ el('genQrBtn').addEventListener('click', ()=>{
   el('qrCodeBox').innerHTML = '';
   new QRCode(el('qrCodeBox'), {
     text: finalUrl, width: 220, height: 220,
-    colorDark: '#1c2b3a', colorLight: '#ffffff',
+    colorDark: '#1e3a8a', colorLight: '#ffffff',
     correctLevel: QRCode.CorrectLevel.M
   });
   el('downloadQrBtn').style.display = 'inline-block';
@@ -844,11 +1011,10 @@ el('downloadQrBtn').addEventListener('click', ()=>{
 });
 
 /* ==================================================================
-   TAB 3: live check-in roster from a published Google Sheet CSV
+   TAB 3: live check-in roster
    ================================================================== */
-let rosterData = []; // {timestamp, name, id4, category, examNo}
+let rosterData = [];
 
-/* tab3 按鈕已從導覽列移除，同上用 ?. 保護 */
 document.querySelector('[data-tab="tab3"]')?.addEventListener('click', ()=>{
   if(data && data.activity_code){
     el('filterAnnouncementNo').value = data.activity_code;
@@ -857,6 +1023,7 @@ document.querySelector('[data-tab="tab3"]')?.addEventListener('click', ()=>{
 
 function setRosterStatus(msg, cls){
   const box = el('rosterStatus');
+  box.style.display = msg ? 'flex' : 'none';
   box.className = 'status ' + (cls||'');
   box.innerHTML = msg ? (cls==='loading' ? `<div class="spinner"></div>${msg}` : msg) : '';
 }
@@ -870,14 +1037,12 @@ function findCsvKey(row, candidates){
   return null;
 }
 
-/* 報到試算表的 CSV 網址是全系統共用一份（報到表單只有一份），寫死成預設值，
-   一般使用者不需要知道也不用填；欄位收在「即時報到名單」的「進階」裡，真的要換才去改。 */
 try{
   const DEFAULT_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS7PU7hFt41SnKJGg3MU9PL8JGhgi1szdP7j5ii4JdxuYXbtVC2sptieMEKZjYcTeJ-lmlhBZX4vheq/pub?gid=444697738&single=true&output=csv';
   const savedCsvUrl = localStorage.getItem('rosterCsvUrl');
   el('csvUrlInput').value = savedCsvUrl || DEFAULT_CSV_URL;
   if(!savedCsvUrl){ try{ localStorage.setItem('rosterCsvUrl', DEFAULT_CSV_URL); }catch(e){} }
-}catch(e){ /* localStorage unavailable, ignore */ }
+}catch(e){}
 el('csvUrlInput').addEventListener('change', ()=>{
   try{ localStorage.setItem('rosterCsvUrl', el('csvUrlInput').value.trim()); }catch(e){}
 });
@@ -938,7 +1103,7 @@ function processRosterCsv(rows, filterNo){
 
 function renderRoster(){
   if(!rosterData.length){
-    el('rosterWrap').innerHTML = '<div style="font-family:system-ui,sans-serif;color:var(--muted);font-size:13px;">尚無資料，或篩選不到符合此活動代碼的報到記錄。</div>';
+    el('rosterWrap').innerHTML = '<div style="color:var(--muted);font-size:14px; padding:12px; background:#f1f5f9; border-radius:6px; text-align:center;">尚無資料，或篩選不到符合此活動代碼的報到記錄。</div>';
     return;
   }
   const byCat = {};
@@ -949,7 +1114,7 @@ function renderRoster(){
     html += `<div class="roster-group-title">${escapeHtml(cat)}（${list.length} 位）</div>`;
     html += '<table class="roster-table"><tr><th>准考證號碼</th><th>姓名</th><th>身分證後4碼</th><th>報到時間</th></tr>';
     list.forEach(r=>{
-      html += `<tr><td>${r.examNo}</td><td>${escapeHtml(r.name)}</td><td>${escapeHtml(r.id4)}</td><td>${escapeHtml(r.timestamp)}</td></tr>`;
+      html += `<tr><td><b>${r.examNo}</b></td><td>${escapeHtml(r.name)}</td><td>${escapeHtml(r.id4)}</td><td>${escapeHtml(r.timestamp)}</td></tr>`;
     });
     html += '</table>';
   });
@@ -962,10 +1127,10 @@ el('toScoreBtn').addEventListener('click', ()=>{
 });
 
 /* ==================================================================
-   TAB 4: 甄選人員成績表 — judge count 2/3, live averages, printable
+   TAB 4: 甄選人員成績表
    ================================================================== */
 let judgeCount = 3;
-let scoreCandidates = []; // {category, name, examNo, teach:[], oral:[], result}
+let scoreCandidates = [];
 
 el('judgeToggle').querySelectorAll('button').forEach(btn=>{
   btn.addEventListener('click', ()=>{
@@ -1013,7 +1178,7 @@ function cnNum(i){ return ['一','二','三','四','五'][i-1] || i; }
 
 function renderScoreTable(){
   if(!scoreCandidates.length){
-    el('scoreTableWrap').innerHTML = '<div style="font-family:system-ui,sans-serif;color:var(--muted);font-size:13px;">尚無考生資料，請從「即時報到名單」匯入，或按上方「手動新增一列考生」自行測試格式。</div>';
+    el('scoreTableWrap').innerHTML = '<div style="color:var(--muted);font-size:14px; text-align:center; padding:24px; background:#f8fafc; border: 1px dashed var(--line); border-radius:8px;">尚無考生資料，請從「即時報到名單」匯入，或按上方「手動新增一列考生」自行填寫。</div>';
     return;
   }
   const byCat = {};
@@ -1021,7 +1186,7 @@ function renderScoreTable(){
 
   let html = '';
   Object.entries(byCat).forEach(([cat, list])=>{
-    html += `<h3 style="font-size:14.5px;margin:18px 0 4px;">${escapeHtml(data.announcement_title||'')}（${escapeHtml(cat||'未分類')}）人員成績表</h3>`;
+    html += `<h3 style="font-size:16px;margin:24px 0 8px; color:var(--primary); font-weight:700;">${escapeHtml(data.announcement_title||'')}（${escapeHtml(cat||'未分類')}）人員成績表</h3>`;
     html += '<table class="score-table"><tr>' +
       '<th rowspan="2">項目</th><th rowspan="2">姓名</th><th rowspan="2">准考證<br>號碼</th>' +
       `<th colspan="${judgeCount+1}">試教</th><th colspan="${judgeCount+1}">口試</th>` +
@@ -1036,9 +1201,9 @@ function renderScoreTable(){
       const oralAvg = avg(c.oral);
       const bothAvg = (teachAvg!=='' && oralAvg!=='') ? ((parseFloat(teachAvg)+parseFloat(oralAvg))/2).toFixed(2) : '';
       html += `<tr>
-        <td><input data-idx="${c._idx}" data-f="category" value="${escapeHtml(c.category)}" style="width:60px;"></td>
-        <td><input data-idx="${c._idx}" data-f="name" value="${escapeHtml(c.name)}" style="width:64px;"></td>
-        <td><input data-idx="${c._idx}" data-f="examNo" value="${escapeHtml(String(c.examNo))}" style="width:40px;"></td>`;
+        <td><input data-idx="${c._idx}" data-f="category" value="${escapeHtml(c.category)}" style="width:70px;"></td>
+        <td><input data-idx="${c._idx}" data-f="name" value="${escapeHtml(c.name)}" style="width:75px; font-weight:500;"></td>
+        <td><input data-idx="${c._idx}" data-f="examNo" value="${escapeHtml(String(c.examNo))}" style="width:45px;"></td>`;
       c.teach.forEach((v,i)=>{
         html += `<td><input data-idx="${c._idx}" data-f="teach" data-i="${i}" value="${escapeHtml(v)}"></td>`;
       });
@@ -1047,7 +1212,7 @@ function renderScoreTable(){
         html += `<td><input data-idx="${c._idx}" data-f="oral" data-i="${i}" value="${escapeHtml(v)}"></td>`;
       });
       html += `<td class="avg-cell">${oralAvg}</td>`;
-      html += `<td class="avg-cell">${bothAvg}</td>`;
+      html += `<td class="avg-cell" style="color:var(--accent);">${bothAvg}</td>`;
       html += `<td><input class="result-input" data-idx="${c._idx}" data-f="result" value="${escapeHtml(c.result)}" placeholder="正取/備取"></td>`;
       html += '</tr>';
     });
@@ -1088,14 +1253,14 @@ function updateRowAverages(changedInput){
 el('printScoreBtn').addEventListener('click', ()=> window.print());
 
 /* ==================================================================
-   TAB 1 extra: "產生" = log to a record Google Form + auto-generate QR
+   TAB 1 extra: "產生"
    ================================================================== */
 try{
   const DEFAULT_RECORD_TEMPLATE = 'https://docs.google.com/forms/d/e/1FAIpQLSejyOTrnNWrRPKYb4gr2HuGdu8czABrnXo3GAviASz8n2VXUw/viewform?usp=pp_url&entry.1142626752=ANNO_NO&entry.234038171=SCHOOL&entry.1954700547=NOTIFY_EMAILS&entry.130771331=FULLDATA';
   const savedRecordTemplate = localStorage.getItem('recordFormTemplate');
   el('recordTemplateInput').value = savedRecordTemplate || DEFAULT_RECORD_TEMPLATE;
   if(!savedRecordTemplate){ try{ localStorage.setItem('recordFormTemplate', DEFAULT_RECORD_TEMPLATE); }catch(e){} }
-}catch(e){ /* localStorage unavailable, ignore */ }
+}catch(e){}
 
 function saveSetupSettings(){
   try{
@@ -1107,11 +1272,8 @@ function saveSetupSettings(){
 }
 el('recordTemplateInput').addEventListener('change', saveSetupSettings);
 
-
-// Parse a "pre-filled link" template that used placeholder tokens (ANNO_NO / SCHOOL / FULLDATA)
-// to figure out which entry.xxx id belongs to which field.
 function parseTokenMapping(templateUrl){
-  const url = new URL(templateUrl); // throws if invalid
+  const url = new URL(templateUrl);
   const mapping = {};
   for(const [key, val] of url.searchParams.entries()){
     if(key.startsWith('entry.')) mapping[val.trim()] = key;
@@ -1127,14 +1289,11 @@ function submitToRecordForm(){
     const actionUrl = template.replace(/\/viewform.*$/, '/formResponse');
     const body = new URLSearchParams();
 
-    // 順便把這場甄選的報到網址（QR code 對應的網址）一起存進 FULLDATA，
-    // 這樣「甄選紀錄」表單被送出時，Apps Script 就能直接拿到網址去產生 QR 圖寄信通知，
-    // 不用再另外新增一個 Google 表單欄位。
     let checkinUrl = '';
     const checkinTemplate = (el('formTemplateInput').value || '').trim();
     if(checkinTemplate && data.activity_code){
       try{ checkinUrl = buildPrefilledUrl(checkinTemplate, data.activity_code); }
-      catch(e){ /* 範本無效就留空，Apps Script那邊寄信時會提示還沒設定 */ }
+      catch(e){}
     }
     const fullDataPayload = Object.assign({}, data, { checkin_url: checkinUrl });
 
@@ -1148,7 +1307,7 @@ function submitToRecordForm(){
     }
     fetch(actionUrl, {
       method: 'POST',
-      mode: 'no-cors', // Google Forms' public submit endpoint doesn't allow reading the response back
+      mode: 'no-cors',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body
     });
@@ -1159,22 +1318,21 @@ function submitToRecordForm(){
 
 function setProduceStatus(msg, cls){
   const box = el('produceStatus');
+  box.style.display = msg ? 'flex' : 'none';
   box.className = 'status ' + (cls||'');
   box.innerHTML = msg || '';
 }
 
-/* 檢查通知信箱格式：可多個（逗號/分號分隔），每一個都要像正常 email */
 function invalidEmails(raw){
   return (raw||'').split(/[,，、;；\s]+/).map(s=>s.trim()).filter(Boolean)
     .filter(e => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e));
 }
 
-let alreadyProduced = false; // 防止重複按「產生」重複送紀錄＋重複寄信
+let alreadyProduced = false;
 
 el('produceBtn').addEventListener('click', ()=>{
   if(!data) return;
 
-  // ---- 必填檢查（缺什麼講什麼，全部擋下來才不會送出空資料、寄空信）----
   const missing = [];
   if(!(data.announcement_title||'').trim()) missing.push('簡章名稱');
   if(!(data.announcement_no||'').trim())    missing.push('簡章編號');
@@ -1191,7 +1349,6 @@ el('produceBtn').addEventListener('click', ()=>{
     return;
   }
 
-  // ---- 重複按防護：已產生過就要明確確認才重做（會重複送紀錄＋重複寄信）----
   if(alreadyProduced){
     const ok = confirm('這場甄選已經產生過了。\n再按一次會「重複」送出一筆甄選紀錄、並再寄一封通知信。\n\n確定要重新產生嗎？');
     if(!ok) return;
@@ -1201,7 +1358,6 @@ el('produceBtn').addEventListener('click', ()=>{
   alreadyProduced = true;
   el('produceBtn').textContent = '已產生完成 ✓（再按會重複寄信，需確認）';
 
-  // 同步附加工具分頁的活動代碼欄位
   el('qrAnnouncementNo').value = data.activity_code;
   el('filterAnnouncementNo').value = data.activity_code;
 
@@ -1222,7 +1378,7 @@ el('produceBtn').addEventListener('click', ()=>{
   el('produceQrBox').innerHTML = '';
   new QRCode(el('produceQrBox'), {
     text: finalUrl, width: 200, height: 200,
-    colorDark: '#1c2b3a', colorLight: '#ffffff',
+    colorDark: '#1e3a8a', colorLight: '#ffffff',
     correctLevel: QRCode.CorrectLevel.M
   });
   el('produceDownloadQrBtn').style.display = 'inline-block';
@@ -1236,7 +1392,6 @@ el('produceBtn').addEventListener('click', ()=>{
   );
 });
 
-/* 任一欄位改動後解除「已產生」狀態（視為在建立另一場新甄選） */
 ['f_announcement_title','f_announcement_no','f_notify_emails'].forEach(id=>{
   el(id).addEventListener('input', ()=>{
     if(alreadyProduced){
@@ -1278,7 +1433,6 @@ el('produceDownloadQrBtn').addEventListener('click', ()=>{
   link.click();
 });
 
-/* 列印 A4 QR 海報：大標題＋超大 QR＋簡單指示，直接貼在報到處 */
 el('printPosterBtn').addEventListener('click', ()=>{
   const src = getQrDataUrl();
   if(!src) return;
@@ -1288,11 +1442,11 @@ el('printPosterBtn').addEventListener('click', ()=>{
   w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>報到 QR 海報</title>
     <style>
       @page{ size:A4 portrait; margin:20mm; }
-      body{ font-family:"Noto Serif TC","PMingLiU",serif; text-align:center; margin:0; padding:40px 20px; }
-      h1{ font-size:30px; line-height:1.5; margin:0 0 10px; }
-      h2{ font-size:24px; font-weight:600; margin:0 0 36px; }
-      img{ width:340px; height:340px; }
-      .hint{ font-size:20px; margin-top:36px; line-height:1.8; }
+      body{ font-family:"Noto Sans TC", -apple-system, sans-serif; text-align:center; margin:0; padding:40px 20px; color:#1e3a8a; }
+      h1{ font-size:32px; line-height:1.5; margin:0 0 10px; font-weight:700; color:#1e3a8a; }
+      h2{ font-size:26px; font-weight:600; margin:0 0 40px; color:#8a3b2b; letter-spacing:0.1em; }
+      img{ width:360px; height:360px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-radius: 12px; padding: 10px; background: #fff;}
+      .hint{ font-size:22px; margin-top:40px; line-height:1.8; color:#1f2937; font-weight:500; }
     </style></head><body>
     <h1>${title.replace(/</g,'&lt;')}</h1>
     <h2>現 場 報 到</h2>
@@ -1303,9 +1457,6 @@ el('printPosterBtn').addEventListener('click', ()=>{
   w.document.close();
 });
 
-/* ==================================================================
-   頁面載入初始化：主頁直接顯示一筆空白資料可供填寫，不需要任何上傳/解析步驟
-   ================================================================== */
 fillFieldsFromData();
 el('qrAnnouncementNo').value = data.activity_code;
 el('filterAnnouncementNo').value = data.activity_code;
