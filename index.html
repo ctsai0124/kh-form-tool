@@ -629,7 +629,23 @@
           <label>甄選日期時間（會顯示在評分總表上）</label>
           <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
             <input type="date" id="f_exam_date" style="flex:1.2;min-width:150px;">
-            <input type="time" id="f_exam_time" step="600" style="flex:1;min-width:120px;">
+            <div style="display:flex;gap:6px;align-items:center;flex:1;min-width:160px;">
+              <select id="f_exam_hour" style="flex:1;font-family:inherit;font-size:14px;padding:11px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);box-shadow:var(--shadow-sm);">
+                <option value="">時</option>
+                <option value="08">08</option><option value="09">09</option>
+                <option value="10">10</option><option value="11">11</option>
+                <option value="12">12</option><option value="13">13</option>
+                <option value="14">14</option><option value="15">15</option>
+                <option value="16">16</option><option value="17">17</option>
+              </select>
+              <span style="color:var(--muted);font-size:14px;">:</span>
+              <select id="f_exam_min" style="flex:1;font-family:inherit;font-size:14px;padding:11px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);box-shadow:var(--shadow-sm);">
+                <option value="">分</option>
+                <option value="00">00</option><option value="10">10</option>
+                <option value="20">20</option><option value="30">30</option>
+                <option value="40">40</option><option value="50">50</option>
+              </select>
+            </div>
             <span id="examDatetimePreview" style="font-size:13px;color:var(--muted);flex-basis:100%; margin-top: 4px;"></span>
           </div>
         </div>
@@ -850,26 +866,27 @@ const simpleFieldIds = {
 
 function composeExamDatetime(){
   const d = el('f_exam_date').value;
-  const t = el('f_exam_time').value;
+  const h = el('f_exam_hour').value;
+  const m = el('f_exam_min').value;
   let s = '';
   if(d){
-    const [y, m, day] = d.split('-').map(Number);
-    s += `${y - 1911}年${m}月${day}日`;
+    const [y, mo, day] = d.split('-').map(Number);
+    s += `${y - 1911}年${mo}月${day}日`;
   }
-  if(t){
-    let [h, min] = t.split(':').map(Number);
+  if(h && m !== ''){
+    let hNum = parseInt(h, 10);
     let period;
-    if(h === 0){ period = '上午'; h = 12; }
-    else if(h < 12){ period = '上午'; }
-    else if(h === 12){ period = '下午'; }
-    else { period = '下午'; h -= 12; }
-    s += `${period}${h}時${String(min).padStart(2,'0')}分`;
+    if(hNum === 0){ period = '上午'; hNum = 12; }
+    else if(hNum < 12){ period = '上午'; }
+    else if(hNum === 12){ period = '下午'; }
+    else { period = '下午'; hNum -= 12; }
+    s += `${period}${hNum}時${m}分`;
   }
   if(s) s += '起';
   data.exam_datetime = s;
   el('examDatetimePreview').textContent = s ? ('將顯示為：甄選日期：' + s) : '';
 }
-['f_exam_date','f_exam_time'].forEach(id=>{
+['f_exam_date','f_exam_hour','f_exam_min'].forEach(id=>{
   document.addEventListener('change', e=>{ if(e.target.id === id) composeExamDatetime(); });
 });
 
